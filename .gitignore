@@ -1,0 +1,6 @@
+.DS_Store
+.Rproj.user/
+.hugo_build.lock
+/blogdown/
+/public/
+
