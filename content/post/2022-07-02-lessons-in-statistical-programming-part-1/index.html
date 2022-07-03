@@ -1,0 +1,186 @@
+---
+title: 'Lessons in statistical programming: part 1'
+author: Camden Lopez
+date: '2022-07-02'
+slug: lessons-in-statistical-programming-part-1
+categories: []
+tags: []
+---
+
+
+
+<p>I really started learning how to use R for statistical programming in my first job after completing an MS in statistics. Graduate courses in statistics generally teach some R, but programming for coursework doesn’t have nearly the same demands as a full-time job. My statistician role at Mayo Clinic encouraged me to improve my programming for three reasons:</p>
+<ol style="list-style-type: decimal">
+<li>For nearly all of the analysis and documents that I produced, the audience was a team of busy, clinically — not statistically — trained investigators and medical trainees. They were mainly hospital physicians/surgeons, epidemiologists, and medical fellows/residents. I needed to present the results of my analysis in a form that was more-or-less clear and digestible to this audience, either in a meeting or (with more difficulty) over email. Creating clear, concise analysis documents that were also reproducible — meaning, they could be reproduced exactly the same as the first time by running code rather than manually assembling a document — required learning new tools.</li>
+<li>Both the extent of each individual project, and the number of projects going on simultaneously, increased several fold. Having more extensive projects meant that the amount of analysis and code grew beyond what I could reasonably manage without losing track and making mistakes if I didn’t establish a system for keeping organized. Having a greater number or projects made it all the more important to keep organized, and it meant that similar tasks got repeated many times; when I was accomplishing a certain task in an inefficient or mistake-prone way, usually it didn’t take long for that to become apparent.</li>
+<li>The stakes were somewhat higher when conducting analysis that might get published in a medical journal, compared to programming for coursework. Additionally, if there were frequently mistakes — even minor ones — in my work, it could undermine the trust that the investigators placed in me to handle their data and produce analysis that they were comfortable defending.</li>
+</ol>
+<p>The following are some lessons I’ve learned as my statistical programming developed during five years of working in clinical research.</p>
+<div id="learn-to-create-readable-reproducible-reports" class="section level1">
+<h1>Learn to create readable, reproducible reports</h1>
+<p>In clinical research, as in nearly all applications of statistics (I imagine), the results of statistical analysis primarily need to be communicated to non-statisticians. If I wanted to show the results of a linear regression to another statistician, there would be no problem bringing up an R console and simply showing them console output:</p>
+<pre class="r"><code>fit &lt;-
+  lm(outcome ~ sex + age.10 + treatment,
+     data = patients)
+summary(fit)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = outcome ~ sex + age.10 + treatment, data = patients)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -36.325  -6.861   0.850   8.688  23.996 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)    3.069      5.854   0.524   0.6014    
+## sexMale        4.874      2.387   2.042   0.0439 *  
+## age.10        -5.843      1.040  -5.618 1.92e-07 ***
+## treatmentB     2.122      2.962   0.716   0.4756    
+## treatmentC     4.999      2.769   1.805   0.0742 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 11.65 on 95 degrees of freedom
+## Multiple R-squared:  0.2987, Adjusted R-squared:  0.2691 
+## F-statistic: 10.11 on 4 and 95 DF,  p-value: 7.298e-07</code></pre>
+<p>A statistician would know where to find the pertinent information here, and wouldn’t be bothered much by everything else. Many non-statisticians familiar with linear regression could read this fine too. But there’s quite a bit of extraneous “ink” here: the <code>Call</code> and <code>Residuals</code>, <code>Std. Error</code> and <code>t value</code>, more digits than needed in the table, and some esoteric numbers and labels. Plus, there are no confidence intervals. To meet the needs of a research team whose members have a range of experience with statistics, this output needs to be distilled and formatted in a more user-friendly manner.</p>
+<p>I’ve used a few different methods to make the output more presentable. When it comes to statistical models such as linear regression, one step often is to extract information into a data frame using the <a href="https://broom.tidymodels.org/">broom</a> package’s <code>tidy</code> (and occasionally <code>glance</code>) functions.</p>
+<pre class="r"><code>library(broom)
+tidy(fit, conf.int = TRUE)</code></pre>
+<pre><code>## # A tibble: 5 × 7
+##   term        estimate std.error statistic     p.value conf.low conf.high
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)     3.07      5.85     0.524 0.601         -8.55      14.7 
+## 2 sexMale         4.87      2.39     2.04  0.0439         0.136      9.61
+## 3 age.10         -5.84      1.04    -5.62  0.000000192   -7.91      -3.78
+## 4 treatmentB      2.12      2.96     0.716 0.476         -3.76       8.00
+## 5 treatmentC      5.00      2.77     1.81  0.0742        -0.499     10.5</code></pre>
+<p>Then I like to modify the table in the following ways:</p>
+<ul>
+<li>Drop the <code>(Intercept)</code> row if not relevant for the analysis.</li>
+<li>Create a single, formatted estimate of the form <code>point (95% lower, upper)</code>, with an appropriate number of digits.</li>
+<li>Re-format P-values to have two significant digits if <span class="math inline">\(\geq\)</span> 0.10, one digit if &lt; 0.10 but not smaller than, say, 0.0001, and “&lt; 0.0001” otherwise.</li>
+<li>Replace variable names with reader-friendly labels, in a manner similar to how labels are used in SAS. This is unnecessary for many variables (<code>male</code> and <code>treatment</code> are clear enough), but with continuous variables it’s helpful to include units, and complicated or uncommon variables sometimes warrant more a descriptive label.</li>
+<li>For estimates associated with levels of a categorical variable, include a row indicating the reference level.</li>
+</ul>
+<p>My final table typically looks like this:</p>
+<pre><code>## # A tibble: 6 × 4
+##   Variable            Level  `Coefficient (95% CI)` `P-value`
+##   &lt;chr&gt;               &lt;chr&gt;  &lt;chr&gt;                  &lt;chr&gt;    
+## 1 &quot;Sex&quot;               Female ---                    ---      
+## 2 &quot;&quot;                  Male   4.9 (0.1, 9.6)         0.04     
+## 3 &quot;Age, per 10 years&quot; ---    -5.8 (-7.9, -3.8)      &lt;0.0001  
+## 4 &quot;Treatment&quot;         A      ---                    ---      
+## 5 &quot;&quot;                  B      2.1 (-3.8, 8.0)        0.48     
+## 6 &quot;&quot;                  C      5.0 (-0.5, 10.5)       0.07</code></pre>
+<p>Having created a table with more presentable content, what remains is to save it in a document. Textual R output can be written to a text file using the <code>sink</code> function, and figures can be saved in their own files, but for any non-trivial analysis, there will be a number of tables and figures that will need to be collected into a single document, ideally with explanatory text. The explanatory text, which would include table/figure captions and other notes describing the data or statistical methods, as well as section headers to help navigate larger documents, can be important for communicating and documenting the analysis. This type of document may need to be revised or re-compiled many times through the course of a project, so it’s best to be able to produce it entirely with code rather than manual assembly.</p>
+<p>This is where <a href="https://bookdown.org/yihui/rmarkdown/">R Markdown</a> is indispensable. I rely on it so much that I’ve hardly given thought to how one might put together a report based on R output <em>without</em> using R Markdown. (I didn’t know about the <code>sink</code> function until just now.) For anyone not familiar with it, R Markdown provides a means for interweaving text such as this paragraph with blocks of R code, the output of which is incorporated into a document (usually PDF or HTML). This post was written with R Markdown.</p>
+<p>When rendered using the <a href="https://yihui.org/knitr/">knitr</a> package’s <code>kable</code> function, the table above looks like this:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Variable</th>
+<th align="left">Level</th>
+<th align="center">Coefficient (95% CI)</th>
+<th align="center">P-value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Sex</td>
+<td align="left">Female</td>
+<td align="center">—</td>
+<td align="center">—</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">Male</td>
+<td align="center">4.9 (0.1, 9.6)</td>
+<td align="center">0.04</td>
+</tr>
+<tr class="odd">
+<td align="left">Age, per 10 years</td>
+<td align="left">—</td>
+<td align="center">-5.8 (-7.9, -3.8)</td>
+<td align="center">&lt;0.0001</td>
+</tr>
+<tr class="even">
+<td align="left">Treatment</td>
+<td align="left">A</td>
+<td align="center">—</td>
+<td align="center">—</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">B</td>
+<td align="center">2.1 (-3.8, 8.0)</td>
+<td align="center">0.48</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">C</td>
+<td align="center">5.0 (-0.5, 10.5)</td>
+<td align="center">0.07</td>
+</tr>
+</tbody>
+</table>
+<p>My intent with all this work creating a nicely formatted table is to reduce as much friction as possible in the transfer of information from the analysis output to the minds of the research team: eliminate extraneous information and symbols, and present the pertinent information in a familiar format — that is, in a format similar to what one would find in a medical journal article.</p>
+<p>Another reason to take care with how I present my analysis results, even at an early stage, is that the investigators for whom I’m doing the analysis sometimes insert what I considered a preliminary table or figure into a manuscript draft without giving me much opportunity to revise it. It seems best to get those tables and figures in shape from the start, so that fewer difficulties with revision are encountered later.</p>
+<p>Besides tables summarizing regression models, as in the example above, I commonly need to create tables that simply summarize data, as in the typical Table 1 of a medical journal article. For that, I came to rely on the <a href="https://mayoverse.github.io/arsenal/reference/arsenal.html">arsenal</a> package developed and maintained at Mayo Clinic. The <code>tableby</code> function does the job:</p>
+<pre class="r"><code>library(arsenal)
+tableby(treatment ~ sex + age,
+        total = FALSE,
+        test = FALSE,
+        data = patients) %&gt;%
+  summary(digits = 1)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="center">A (N=34)</th>
+<th align="center">B (N=29)</th>
+<th align="center">C (N=37)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>Sex</strong></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr class="even">
+<td align="left">   Female</td>
+<td align="center">15 (44.1%)</td>
+<td align="center">10 (34.5%)</td>
+<td align="center">15 (40.5%)</td>
+</tr>
+<tr class="odd">
+<td align="left">   Male</td>
+<td align="center">19 (55.9%)</td>
+<td align="center">19 (65.5%)</td>
+<td align="center">22 (59.5%)</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Age, years</strong></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr class="odd">
+<td align="left">   Mean (SD)</td>
+<td align="center">50.9 (10.2)</td>
+<td align="center">48.6 (14.4)</td>
+<td align="center">50.6 (9.5)</td>
+</tr>
+<tr class="even">
+<td align="left">   Range</td>
+<td align="center">31.9 - 69.7</td>
+<td align="center">18.1 - 78.4</td>
+<td align="center">24.3 - 69.9</td>
+</tr>
+</tbody>
+</table>
+<p>When it comes to creating figures (graphs, plots), it was valuable to learn the ways of <a href="https://ggplot2.tidyverse.org/">ggplot2</a>. It <em>wasn’t easy</em> to learn — it took at least a couple of years before I felt some fluency with all of the <code>geom_</code>s and so on — but it’s an investment that frequently pays dividends. Now that I’m comfortable with the syntax, the basic types of plot elements, and many of the ways they can be customized, I can create both routine and unconventional or complicated figures without excessive effort (“effort” meaning Googling), which means that I can more easily experiment with different ways to present data, and when the time comes in a project, I can create more sophisticated publication-quality figures.</p>
+</div>
