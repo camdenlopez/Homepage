@@ -1,0 +1,51 @@
+---
+title: 'Lessons in statistical programming: part 2'
+author: Camden Lopez
+date: '2022-07-04'
+slug: lessons-in-statistical-programming-part-2
+categories: []
+tags: []
+---
+
+
+
+<div id="write-code-assuming-it-will-be-run-many-times" class="section level2">
+<h2>Write code assuming it will be run many times</h2>
+<p>If I were writing “production” code for a software application — say, a web browser — I would write it as if the code was going to be executed many times, and read by fellow programmers many times, because it almost certainly would be. I’m not sure it would even occur to me to write code any other way.</p>
+<p>Much of statistical programming is different, and slightly awkward, in that the code is likely to be run more than once, perhaps many times, but its purpose is clearly limited to the near future. It serves to extract information and meaning from data; usually the data are not going to be updated indefinitely, if at all, and once the information/meaning has been extracted and communicated to the relevant people — say, in a journal article — the code pretty much has served its purpose and might never be needed again.</p>
+<p>Furthermore, much analysis is done only to address little questions about the data or to probe a tangential idea. Some of it is done in the course of brain storming or a free-flowing exploration of the data. In those circumstances, I might want to write clean code and keep it on file in an organized state, but doing so might slow or interrupt the flow of thought. Plus, some research teams get a thrill out of seeing analysis done “live” in a meeting (with requests from the audience — “Can we throw age into the model?”), though I’m not sure that’s an effective way to conduct research. In any case, is it always worth the trouble of writing quality code? There’s often a chance that the analysis was ill-conceived and requested without enough forethought, or that the team will get distracted and never really look at the results, or that the results will be uninteresting and discarded.</p>
+<p>So there’s a need for balance between writing careful code and simply getting the job done. I suspect many statisticians get by with much more of the latter than the former. However, I’ve found it wise to assume that my code deserves <em>more</em> care rather than less — that it will be <em>run</em> and <em>modified more times than I anticipate</em>, that it will need to be <em>understandable to more people than I anticipate</em> (i.e. more than myself for the next few weeks).</p>
+<p>Putting this wisdom into practice means</p>
+<ul>
+<li>placing all code in a logical place in an aptly named file, with accurate and descriptive headings, captions, and other labels for the output;</li>
+<li>using informative variable names (no <code>x</code>’s or <code>m1</code>/<code>m2</code>/<code>m3</code>’s);</li>
+<li>giving some consideration (not too much, until it’s clearly warranted) to the code’s efficiency, and structuring it to avoid a lot of tedious, error-prone edits when the code needs to be modified; and</li>
+<li>selectively commenting the code.</li>
+</ul>
+<p>I don’t practice this wisdom all the time, but when I’ve been sloppy at first and when time allows, I try to make additional passes through my code to tidy it up.</p>
+<p>Version control software such as Git can be helpful in negotiating the balance between the careful, maintainable style and the back-of-the-envelope style of code. When I need to write quick-and-dirty code or make ad-hoc, experimental changes to existing code during a meeting, I can do it knowing that <code>git diff</code> will later tell me everything I added or modified. When I have time, I return to those spots, clean them as needed, and commit them. In the meantime, I can carry on with other work without worrying that I’ll lose track of the quick-and-dirty stuff. If there’s a larger experimental change to be made, I can use a branch to maintain separation between what’s more settled code and what’s in development and might be discarded.</p>
+</div>
+<div id="divide-analysis-code-into-tasks" class="section level2">
+<h2>Divide analysis code into tasks</h2>
+<p>The first change that I remember in my approach to programming when I started working at Mayo Clinic was that almost immediately I started relying more on R Markdown (Rmd) than plain R scripts (see preceding post); the second was that I split my Rmd document for a project into two — one for data preparation and one for analysis.</p>
+<p>The need for dividing my code became obvious fairly quickly. Creating an analysis-ready dataset from raw data can take a noticeable amount of computation time for various reasons: needing to read in a large file or query a database, merging large data tables, or performing multiple imputation, for example. Once the data are ready for analysis, it doesn’t make sense to keep running the data preparation steps every time one needs to test out the analysis.</p>
+<p>Instead of having a single Rmd file with data preparation code followed by analysis code, I had a <code>data-prep.Rmd</code> file create an analysis dataset which gets written to a file (initially I might have output a CSV file, but now I save in <code>.RData</code> files to preserve things like factor level ordering), and an <code>analysis.Rmd</code> file which reads in the analysis data and, well, analyzes it. As a natural evolution in more complex projects, both data preparation and analysis, as well as presentation of results, can be split further. For example, in my recent work for a clinical trial, I have separate Rmd files for</p>
+<ol style="list-style-type: decimal">
+<li>downloading raw data from the study’s Oracle database;</li>
+<li>creating a number of clean, analysis-ready datasets from the raw data;</li>
+<li>creating multiply imputed versions of the analysis-ready datasets, if the need arises;</li>
+<li>summarizing enrollment and patient characteristics;</li>
+<li>performing primary and secondary analyses for one of the trial’s aims and saving the results;</li>
+<li>displaying analysis results in presentation slides; and</li>
+<li>gathering final, publication-quality tables and figures in a single document.</li>
+</ol>
+<p>The idea is that each Rmd file performs a single, focused task. <em>Do just one thing at a time.</em> A common feature of beginner R code is the mixing of data preparation, analysis, and presentation in a kind of stream-of-consciousness, unstructured flow. In my experience, mixing these tasks results in code that’s difficult to read (I have to track what’s happening to the dataset and other objects while also trying to understand the analysis methods) and difficult to modify (for example, if I modify the dataset for one part of the analysis, it might mess up another part in an unforeseen way).</p>
+<p>I’ve found it particularly useful to save analysis results in a form that’s easy to transform into either a cleaned-up table or a plot because I will eventually present those results in at least two or three different ways. For example, I might create increasingly refined plots as the project moves from preliminary analysis towards publication of results. Another example: it might be desirable to compare model estimates first based on subgroups within the population, then based on different definitions of the outcome. Each of these tasks can be implemented in a separate file while using a common set of analysis results that need to be produced only once.</p>
+<p>To summarize, dividing code into focused tasks</p>
+<ul>
+<li>helps one stay mentally organized and able to locate relevant code,</li>
+<li>improves the readability of the code for yourself or others in the future,</li>
+<li>can help with efficiency and avoiding the repetition of common steps, and</li>
+<li>allows code for a complex project to grow and address multiple analysis objectives or perspectives in an organized, systematic manner.</li>
+</ul>
+</div>
