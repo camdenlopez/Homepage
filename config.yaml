@@ -16,12 +16,12 @@ menu:
   main:
     - name: About
       url: /about/
-    - name: GitHub
-      url: https://github.com/camdenlopez
     - name: LinkedIn
       url: https://www.linkedin.com/in/camdenlopez/
     - name: PubMed
       url: https://pubmed.ncbi.nlm.nih.gov/?term=Lopez+Camden%5BAuthor%5D
+    - name: GitHub
+      url: https://github.com/camdenlopez
 params:
   MathJaxCDN: //cdnjs.cloudflare.com/ajax/libs
   MathJaxVersion: 2.7.5
