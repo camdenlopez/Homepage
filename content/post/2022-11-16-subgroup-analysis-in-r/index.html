@@ -1,0 +1,180 @@
+---
+title: Subgroup analysis in R
+author: Camden Lopez
+date: '2022-11-16'
+slug: subgroup-analysis-in-r
+categories: []
+tags: []
+---
+
+
+
+<p>Sometimes a statistical analysis is to be repeated in subgroups defined by one or more variables. This is particularly common in clinical trials, where one component of understanding the effect of the investigational treatment may be understanding whether the effect is substantially stronger in particular groups of patients.</p>
+<p>Recently I needed to repeat an analysis in subgroups defined by each of about 12 variables. In R, I used nested <code>for</code> loops to accomplish the task, but I suspected there was a more concise way using <a href="https://www.tidyverse.org/">tidyverse</a> functions. Here’s what I found.</p>
+<div id="setup" class="section level1">
+<h1>Setup</h1>
+<p>Here are some fake data I’ll use in the following code examples. Consider <code>x1</code>–<code>x3</code> to be grouping variables, and <code>y</code> an outcome variable.</p>
+<pre class="r"><code>library(dplyr) # for tidy data manipulation
+
+n &lt;- 1000
+tbl &lt;-
+  tibble(x1 = sample(1:2, n, replace = TRUE),
+         x2 = sample(1:3, n, replace = TRUE),
+         x3 = sample(1:4, n, replace = TRUE),
+         y = rnorm(n)) %&gt;%
+  mutate(across(x1:x3, factor))
+head(tbl)</code></pre>
+<pre><code>## # A tibble: 6 × 4
+##   x1    x2    x3            y
+##   &lt;fct&gt; &lt;fct&gt; &lt;fct&gt;     &lt;dbl&gt;
+## 1 2     2     1      0.240   
+## 2 2     1     2      0.889   
+## 3 1     2     3     -0.000947
+## 4 1     3     1     -1.22    
+## 5 1     1     4     -0.300   
+## 6 1     2     4      1.20</code></pre>
+</div>
+<div id="one-subgroup-analysis" class="section level1">
+<h1>One subgroup analysis</h1>
+<p>First, to illustrate the problem, suppose we want to repeat an analysis in subgroups defined by only <em>one</em> variable, <code>x1</code>. Using a <code>for</code> loop might look like this:</p>
+<pre class="r"><code>library(broom) # for tidy model results
+
+# The analysis to be done in each subgroup.
+# Returns, e.g., point and interval estimates
+# for a parameter.
+do_analysis &lt;- function (data) {
+  lm(y ~ 1, data = data) %&gt;%
+    tidy(conf.int = TRUE) %&gt;%
+    select(estimate, conf.low, conf.high)
+}
+
+output &lt;- NULL
+for (lvl in levels(tbl$x1)) {
+  tmp &lt;-
+    tbl %&gt;%
+    filter(x1 %in% lvl)
+  output &lt;-
+    output %&gt;%
+    bind_rows(do_analysis(tmp) %&gt;%
+                mutate(x1 = lvl,
+                       .before = 1))
+}
+output</code></pre>
+<pre><code>## # A tibble: 2 × 4
+##   x1    estimate conf.low conf.high
+##   &lt;chr&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 1      0.00524  -0.0807    0.0912
+## 2 2     -0.0716   -0.160     0.0165</code></pre>
+<p>The same task can be accomplished in a slightly more concise way, in one chain of “piped” operations, using functions from the <code>tidyr</code> and <code>purrr</code> packages:</p>
+<pre class="r"><code>library(purrr) # for mapping
+library(tidyr) # for nesting
+
+tbl %&gt;%
+  # For each unique value of x1, collapse the
+  # remaining data into a data frame and put
+  # these data frames in a column named &#39;data&#39;
+  nest(data = -x1) %&gt;%
+  # Perform analysis on each data frame
+  mutate(est = map(data, do_analysis)) %&gt;%
+  # Unpack the analysis results
+  unnest(cols = est) %&gt;%
+  select(-data)</code></pre>
+<pre><code>## # A tibble: 2 × 4
+##   x1    estimate conf.low conf.high
+##   &lt;fct&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 2     -0.0716   -0.160     0.0165
+## 2 1      0.00524  -0.0807    0.0912</code></pre>
+</div>
+<div id="multiple-subgroup-analyses" class="section level1">
+<h1>Multiple subgroup analyses</h1>
+<p>Similarly, when analysis needs to be repeated across subgroups defined by <em>multiple</em> variables, one option is to use nested <code>for</code> loops:</p>
+<pre class="r"><code>output &lt;- NULL
+subgroup.vars &lt;- c(&quot;x1&quot;, &quot;x2&quot;, &quot;x3&quot;)
+for (var in subgroup.vars) {
+  for (lvl in levels(tbl[[var]])) {
+    tmp &lt;- tbl[tbl[[var]] %in% lvl, ]
+    output &lt;-
+      output %&gt;%
+      bind_rows(do_analysis(tmp) %&gt;%
+                  mutate(var = var,
+                         lvl = lvl,
+                         .before = 1))
+  }
+}
+output</code></pre>
+<pre><code>## # A tibble: 9 × 5
+##   var   lvl   estimate conf.low conf.high
+##   &lt;chr&gt; &lt;chr&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 x1    1      0.00524  -0.0807    0.0912
+## 2 x1    2     -0.0716   -0.160     0.0165
+## 3 x2    1     -0.0746   -0.179     0.0294
+## 4 x2    2      0.0405   -0.0693    0.150 
+## 5 x2    3     -0.0548   -0.161     0.0518
+## 6 x3    1     -0.0360   -0.164     0.0919
+## 7 x3    2     -0.0950   -0.217     0.0272
+## 8 x3    3     -0.0240   -0.151     0.103 
+## 9 x3    4      0.0253   -0.0902    0.141</code></pre>
+<p>Alternatively, one can use the <code>nest</code> and <code>map</code> functions, but this time it’s a little tricky. First, I create a table of the subgroup variables and their levels:</p>
+<pre class="r"><code>tmp &lt;-
+  tibble(var = subgroup.vars) %&gt;%
+  mutate(lvl = map(var, ~ levels(tbl[[.x]]))) %&gt;%
+  unnest(cols = lvl)
+tmp</code></pre>
+<pre><code>## # A tibble: 9 × 2
+##   var   lvl  
+##   &lt;chr&gt; &lt;chr&gt;
+## 1 x1    1    
+## 2 x1    2    
+## 3 x2    1    
+## 4 x2    2    
+## 5 x2    3    
+## 6 x3    1    
+## 7 x3    2    
+## 8 x3    3    
+## 9 x3    4</code></pre>
+<p>Then I add the data sets corresponding to each subgroup. In the resulting table, the original data set has been replicated (while also being split by subgroups). Each original observation appears <span class="math inline">\(g\)</span> times, where <span class="math inline">\(g\)</span> is the number of subgroup variables.</p>
+<pre class="r"><code>tmp %&gt;%
+  mutate(data =
+           map2(var, lvl,
+                ~ tbl[tbl[[.x]] %in% .y, ]))</code></pre>
+<pre><code>## # A tibble: 9 × 3
+##   var   lvl   data              
+##   &lt;chr&gt; &lt;chr&gt; &lt;list&gt;            
+## 1 x1    1     &lt;tibble [521 × 4]&gt;
+## 2 x1    2     &lt;tibble [479 × 4]&gt;
+## 3 x2    1     &lt;tibble [342 × 4]&gt;
+## 4 x2    2     &lt;tibble [315 × 4]&gt;
+## 5 x2    3     &lt;tibble [343 × 4]&gt;
+## 6 x3    1     &lt;tibble [232 × 4]&gt;
+## 7 x3    2     &lt;tibble [243 × 4]&gt;
+## 8 x3    3     &lt;tibble [272 × 4]&gt;
+## 9 x3    4     &lt;tibble [253 × 4]&gt;</code></pre>
+<p>Finally, we perform analysis on each data set and unpack the results. Altogether the operation looks like this:</p>
+<pre class="r"><code>tibble(var = subgroup.vars) %&gt;%
+  mutate(lvl = map(var, ~ levels(tbl[[.x]]))) %&gt;%
+  unnest(cols = lvl) %&gt;%
+  mutate(data =
+           map2(var, lvl,
+                ~ tbl[tbl[[.x]] %in% .y, ])) %&gt;%
+  mutate(est = map(data, do_analysis)) %&gt;%
+  unnest(cols = est) %&gt;%
+  select(-data)</code></pre>
+<pre><code>## # A tibble: 9 × 5
+##   var   lvl   estimate conf.low conf.high
+##   &lt;chr&gt; &lt;chr&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 x1    1      0.00524  -0.0807    0.0912
+## 2 x1    2     -0.0716   -0.160     0.0165
+## 3 x2    1     -0.0746   -0.179     0.0294
+## 4 x2    2      0.0405   -0.0693    0.150 
+## 5 x2    3     -0.0548   -0.161     0.0518
+## 6 x3    1     -0.0360   -0.164     0.0919
+## 7 x3    2     -0.0950   -0.217     0.0272
+## 8 x3    3     -0.0240   -0.151     0.103 
+## 9 x3    4      0.0253   -0.0902    0.141</code></pre>
+<p>Is this method really the more concise alternative that I was looking for? Not exactly; it’s similar in the amount of code, compared to the nested <code>for</code> loops. Although I like having one chain of operations — and no intermediate/temporary objects — in the style of the tidyverse, this method is less efficient in a way (by replicating the data), and the code might be more difficult to understand than the nested <code>for</code> loops.</p>
+</div>
+<div id="conclusion" class="section level1">
+<h1>Conclusion</h1>
+<p>For a single subgroup analysis, I prefer the more concise method using the tidyverse’s <code>nest</code>-<code>map</code>-<code>unnest</code> functions.</p>
+<p>For multiple subgroup variables, it’s possible to use tidyverse functions in a single chain of operations, but it’s less clear whether this method is an improvement over <code>for</code> loops.</p>
+</div>

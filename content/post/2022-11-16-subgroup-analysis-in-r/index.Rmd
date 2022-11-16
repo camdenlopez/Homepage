@@ -1,0 +1,145 @@
+---
+title: Subgroup analysis in R
+author: Camden Lopez
+date: '2022-11-16'
+slug: subgroup-analysis-in-r
+categories: []
+tags: []
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE)
+set.seed(20221116)
+```
+
+Sometimes a statistical analysis is to be repeated in subgroups defined by one or more variables. This is particularly common in clinical trials, where one component of understanding the effect of the investigational treatment may be understanding whether the effect is substantially stronger in particular groups of patients.
+
+Recently I needed to repeat an analysis in subgroups defined by each of about 12 variables. In R, I used nested `for` loops to accomplish the task, but I suspected there was a more concise way using [tidyverse](https://www.tidyverse.org/) functions. Here's what I found.
+
+# Setup
+
+Here are some fake data I'll use in the following code examples. Consider `x1`--`x3` to be grouping variables, and `y` an outcome variable.
+
+```{r}
+library(dplyr) # for tidy data manipulation
+
+n <- 1000
+tbl <-
+  tibble(x1 = sample(1:2, n, replace = TRUE),
+         x2 = sample(1:3, n, replace = TRUE),
+         x3 = sample(1:4, n, replace = TRUE),
+         y = rnorm(n)) %>%
+  mutate(across(x1:x3, factor))
+head(tbl)
+```
+
+# One subgroup analysis
+
+First, to illustrate the problem, suppose we want to repeat an analysis in subgroups defined by only *one* variable, `x1`. Using a `for` loop might look like this:
+
+```{r}
+library(broom) # for tidy model results
+
+# The analysis to be done in each subgroup.
+# Returns, e.g., point and interval estimates
+# for a parameter.
+do_analysis <- function (data) {
+  lm(y ~ 1, data = data) %>%
+    tidy(conf.int = TRUE) %>%
+    select(estimate, conf.low, conf.high)
+}
+
+output <- NULL
+for (lvl in levels(tbl$x1)) {
+  tmp <-
+    tbl %>%
+    filter(x1 %in% lvl)
+  output <-
+    output %>%
+    bind_rows(do_analysis(tmp) %>%
+                mutate(x1 = lvl,
+                       .before = 1))
+}
+output
+```
+
+The same task can be accomplished in a slightly more concise way, in one chain of "piped" operations, using functions from the `tidyr` and `purrr` packages:
+
+```{r}
+library(purrr) # for mapping
+library(tidyr) # for nesting
+
+tbl %>%
+  # For each unique value of x1, collapse the
+  # remaining data into a data frame and put
+  # these data frames in a column named 'data'
+  nest(data = -x1) %>%
+  # Perform analysis on each data frame
+  mutate(est = map(data, do_analysis)) %>%
+  # Unpack the analysis results
+  unnest(cols = est) %>%
+  select(-data)
+```
+
+# Multiple subgroup analyses
+
+Similarly, when analysis needs to be repeated across subgroups defined by *multiple* variables, one option is to use nested `for` loops:
+
+```{r}
+output <- NULL
+subgroup.vars <- c("x1", "x2", "x3")
+for (var in subgroup.vars) {
+  for (lvl in levels(tbl[[var]])) {
+    tmp <- tbl[tbl[[var]] %in% lvl, ]
+    output <-
+      output %>%
+      bind_rows(do_analysis(tmp) %>%
+                  mutate(var = var,
+                         lvl = lvl,
+                         .before = 1))
+  }
+}
+output
+```
+
+Alternatively, one can use the `nest` and `map` functions, but this time it's a little tricky. First, I create a table of the subgroup variables and their levels:
+
+```{r}
+tmp <-
+  tibble(var = subgroup.vars) %>%
+  mutate(lvl = map(var, ~ levels(tbl[[.x]]))) %>%
+  unnest(cols = lvl)
+tmp
+```
+
+Then I add the data sets corresponding to each subgroup. In the resulting table, the original data set has been replicated (while also being split by subgroups). Each original observation appears $g$ times, where $g$ is the number of subgroup variables.
+
+```{r}
+tmp %>%
+  mutate(data =
+           map2(var, lvl,
+                ~ tbl[tbl[[.x]] %in% .y, ]))
+```
+
+Finally, we perform analysis on each data set and unpack the results. Altogether the operation looks like this:
+
+```{r}
+tibble(var = subgroup.vars) %>%
+  mutate(lvl = map(var, ~ levels(tbl[[.x]]))) %>%
+  unnest(cols = lvl) %>%
+  mutate(data =
+           map2(var, lvl,
+                ~ tbl[tbl[[.x]] %in% .y, ])) %>%
+  mutate(est = map(data, do_analysis)) %>%
+  unnest(cols = est) %>%
+  select(-data)
+```
+
+Is this method really the more concise alternative that I was looking for? Not exactly; it's similar in the amount of code, compared to the nested `for` loops. Although I like having one chain of operations --- and no intermediate/temporary objects --- in the style of the tidyverse, this method is less efficient in a way (by replicating the data), and the code might be more difficult to understand than the nested `for` loops.
+
+# Conclusion
+
+For a single subgroup analysis, I prefer the more concise method using the tidyverse's `nest`-`map`-`unnest` functions.
+
+For multiple subgroup variables, it's possible to use tidyverse functions in a single chain of operations, but it's less clear whether this method is an improvement over `for` loops.
