@@ -1,0 +1,115 @@
+---
+title: "Interpretations of an ROC curve"
+author: "Camden Lopez"
+date: "2022-11-25"
+slug: interpretations-of-an-roc-curve
+categories: []
+tags: []
+---
+
+
+
+<p>Receiver operating characteristic (ROC) curves, and the area under the ROC curve (AUROC), are tools for evaluating the usefulness of a measurement or risk score for screening, diagnosis, or prediction of a future event.</p>
+<p>One common interpretation of the AUROC is the following:</p>
+<blockquote>
+<p>The AUROC is the probability that, in a random pairing of a disease patient with a non-disease patient, the disease patient has the higher score.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
+</blockquote>
+<p>In other words, the AUROC is the probability of concordance — the probability of agreement between the score and disease status.</p>
+<p>I’ve been aware of this interpretation for a long time without seeing from the construction of the ROC curve why this would be the case, and without knowing how one demonstrates it mathematically. With the help of an excellent book,<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> I’ve put together some notes on the topic.</p>
+<div id="roc-curves-and-auroc" class="section level1">
+<h1>ROC curves and AUROC</h1>
+<p>First, a quick review of the problem setting. Some type of score, the values of which can be unambiguously ordered from lowest to highest, is measured or calculated from each patient in a population. The purpose of the score is to represent, or correlate with, a patient’s risk of having a particular disease. A reference (“gold”) standard method is used to determine each patient’s disease status.</p>
+<p>An ROC curve is constructed by computing the true positive fraction (TPF) and false positive fraction (FPF) for each possible threshold of the score, where the threshold is used to classify patients as “positive” (higher scores) vs “negative” (lower scores).</p>
+<p>TPF is the same as sensitivity, and FPF is the same as <span class="math inline">\(1-\)</span>specificity:</p>
+<blockquote>
+<p>TPF = Sensitivity = fraction of patients labeled as positive, among those with disease</p>
+</blockquote>
+<blockquote>
+<p>FPF = <span class="math inline">\(1-\)</span>Specificity = fraction of patients labeled as positive, among those without disease</p>
+</blockquote>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-2.png" width="672" style="display: block; margin: auto;" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The ROC curve is formed from plotting TPF vs FPF. As the score threshold decreases, the TPF and FPF each increase from 0 to 1. In terms of (FPF, TPF) coordinates, the ROC curve goes from (0, 0) to (1, 1).</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>If a score will be used in a dichotomous manner (positive vs negative), the ROC curve can be used as a visual aid in weighing TPF vs FPF and choosing a desirable threshold.</p>
+<p>If a score will be used as-is, without dichotomization, or if there’s not yet an accepted threshold for positive classification, then the whole curve is potentially relevant. The AUROC — which is exactly what the name suggests: the area between the <span class="math inline">\(x\)</span>-axis and the (FPF, TPF) curve — is a way to summarize the curve and condense the (FPF, TPF) values into a single number.</p>
+<p>Higher AUROC is desirable. AUROC = 0.5 indicates a useless score, and AUROC = 1 indicates a score that can perfectly separate disease from non-disease patients.</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="two-interpretations" class="section level1">
+<h1>Two interpretations</h1>
+<p>In the book cited above, Pepe writes,<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></p>
+<blockquote>
+<p>The AUC has an interesting interpretation. It is equal to the probability that test results from a randomly selected pair of diseased and non-diseased subjects are correctly ordered, namely <span class="math inline">\(P[Y_D &gt; Y_{\overline{D}}]\)</span>… Although the interpretation of the AUC as the probability of ‘correctly ordering diseased and non-diseased subjects’ is interesting, it does not necessarily provide the best interpretation of this summary measure. The clinical relevance of the correct ordering is not particularly compelling for the applications that we consider… We prefer to interpret the AUC as an average TPF, averaged uniformly over the whole range of false positive fractions in (0,1).</p>
+</blockquote>
+<p>The interpretation of AUROC as concordance probability is contrasted with an interpretation as an average TPF (sensitivity). While both interpretations are equally correct in a mathematical sense, non-mathematical people may find one view more meaningful than the other, so I’m glad to have come across these passages in the book.</p>
+<p>For my own understanding, I found a view of the AUROC in which the equivalence of the two interpretations is so apparent that there’s hardly any need to distinguish between them.</p>
+<div id="as-concordance-probability" class="section level2">
+<h2>As concordance probability</h2>
+<p>Consider how one might conduct a study or simulation to determine the concordance probability for a score. Start by randomly selecting one non-disease patient, and suppose their score is <span class="math inline">\(s\)</span>. Now randomly select a disease patient, and suppose their score is <span class="math inline">\(t\)</span>. Count this pair of scores as concordant if <span class="math inline">\(t &gt; s\)</span>.</p>
+<p>Repeating this sufficiently many times, and computing the fraction of pairs having concordant scores will yield a precise estimate of the concordance probability.</p>
+<p>Now, when you randomly select a non-disease patient, you are randomly selecting a score from the distribution of scores in the non-disease population. If you consider that score to be the threshold defining positive vs negative scores, there is an associated FPF. What is the FPF for score threshold <span class="math inline">\(s\)</span>? It’s the fraction of non-disease patients who have scores greater than <span class="math inline">\(s\)</span>.</p>
+<p>We chose to sample non-disease patients randomly, giving each patient the same probability of being selected. What does this mean in terms of sampling from the possible FPF values? We’re also giving each possible FPF equal probability of being selected. In other words, when we randomly select non-disease patients, the FPF values associated with the patients’ scores will be uniformly distributed between 0 and 1.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a></p>
+<p>Next, consider the randomly selected disease patient whose score is <span class="math inline">\(t\)</span>. The score has been selected randomly from the distribution of disease patient scores. By the same reasoning as above, when we consider the score a threshold with a corresponding <em>TPF</em>, over repeated sampling, these TPF values will be distributed uniformly between 0 and 1. Note that higher <span class="math inline">\(t\)</span> translates into lower TPF.</p>
+<p>By translating each sampled <span class="math inline">\((s, t)\)</span> pair into the corresponding (FPF, TPF) values, we can map each sampled pair of patients onto an <span class="math inline">\((x, y)\)</span> coordinate in the coordinate space of the ROC curve.</p>
+<p>Because the <span class="math inline">\(x\)</span> and <span class="math inline">\(y\)</span> coordinates each are uniformly distributed between 0 and 1, the <span class="math inline">\((x, y)\)</span> points representing the pairs of patients will be uniformly distributed over the unit square bound by <span class="math inline">\((0, 0)\)</span>, <span class="math inline">\((1, 0)\)</span>, <span class="math inline">\((1, 1)\)</span>, and <span class="math inline">\((0, 1)\)</span>.</p>
+<p>Now we can consider how the locations of these points signify concordance of the corresponding patient scores. A comparison of the scores <span class="math inline">\(t\)</span> and <span class="math inline">\(s\)</span> yields a comparison of the TPF for a threshold of <span class="math inline">\(t\)</span> compared to the FPF for a threshold of <span class="math inline">\(s\)</span>, which in turn implies whether the <span class="math inline">\((x, y)\)</span> point lies above, on, or below the ROC curve. Consider any fixed non-disease score of <span class="math inline">\(s\)</span> and the point on the ROC curve defined by a threshold of <span class="math inline">\(s\)</span>.</p>
+<ul>
+<li>If <span class="math inline">\(t = s\)</span>, the TPF for a threshold of <span class="math inline">\(t\)</span> is <em>equal to</em> the TPF for a threshold of <span class="math inline">\(s\)</span>, so the <span class="math inline">\(y\)</span> coordinate of a patient pair with <span class="math inline">\(t = s\)</span> is <em>equal to</em> the <span class="math inline">\(y\)</span> coordinate of the ROC curve where the <span class="math inline">\(x\)</span> coordinate is determined by the threshold <span class="math inline">\(s\)</span>.</li>
+<li>When <span class="math inline">\(t &lt; s\)</span>, the TPF for a threshold of <span class="math inline">\(t\)</span> must be <em>higher than</em> the TPF when the threshold was <span class="math inline">\(t = s\)</span>, so the <span class="math inline">\(y\)</span> coordinate of a patient pair with <span class="math inline">\(t &lt; s\)</span> must be <em>higher than</em> the <span class="math inline">\(y\)</span> coordinate of the ROC curve.</li>
+<li>When <span class="math inline">\(t &gt; s\)</span>, the TPF for a threshold of <span class="math inline">\(t\)</span> must be <em>lower than</em> the TPF when the threshold was <span class="math inline">\(t = s\)</span>, so the <span class="math inline">\(y\)</span> coordinate of a patient pair with <span class="math inline">\(t &gt; s\)</span> must be <em>lower than</em> the <span class="math inline">\(y\)</span> coordinate of the ROC curve.</li>
+</ul>
+<p><img src="/images/auroc-sampling-sim.gif" /></p>
+<p>The patient pairs with concordant scores, <span class="math inline">\(t &gt; s\)</span>, are those whose corresponding points on the ROC coordinate space are below the ROC curve. Because the patient pairs are uniformly distributed over that coordinate space (a unit square), the proportion of pairs with concordant scores — or rather, the limit of the proportion as we sample infinitely many pairs of patients — will be equal to the proportion of area within that unit square lying under the ROC curve, which is equal to the AUROC itself because the denominator of the proportion — the area of the bounding square — is 1.</p>
+</div>
+<div id="as-average-tpf" class="section level2">
+<h2>As average TPF</h2>
+<p>The AUROC is an average TPF (sensitivity) in the following sense.</p>
+<p>The ROC curve plots TPF as a function of FPF. The mean, or average, value of a non-negative function, on the domain between <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span>, is the integral of the function divided by <span class="math inline">\(b-a\)</span>.</p>
+<p>The AUROC is the integral of the TPF function over the domain of FPF (the interval from 0 to 1), divided by <span class="math inline">\(1-0=1\)</span>. Therefore, the AUROC can be viewed as average TPF for the dichotomized score, averaging over the full range of FPF values and giving equal weight to each FPF We can imagine picking random <span class="math inline">\(x\)</span> coordinates (FPF or specificity values) between 0 and 1, then looking up the corresponding <span class="math inline">\(y\)</span> coordinates (TPF or sensitivity values) and taking their average.</p>
+</div>
+</div>
+<div id="equivalence-of-the-two-interpretations" class="section level1">
+<h1>Equivalence of the two interpretations</h1>
+<p>The scheme above for connecting AUROC to the concordance probability requires only a slight modification to link it to the “average sensitivity” interpretation.</p>
+<p>Simply imagine grouping the sampled pairs of patients by their FPF (<span class="math inline">\(x\)</span>) coordinates after mapping them to the (FPF, TPF) coordinate space. For any given group, suppose the non-disease patients all have scores approximately equal to <span class="math inline">\(s\)</span>; the proportion of concordant pairs in that group is the proportion of disease patient scores greater than <span class="math inline">\(s\)</span>, which is the TPF for threshold <span class="math inline">\(s\)</span>. An average of those proportions, across different values of <span class="math inline">\(s\)</span>, is the same as the overall proportion of concordant pairs because each FPF-based group will have, on average, the same number of patient pairs.</p>
+<p>Thus, the calculation of concordance probability is essentially the same as the calculation of average TPF in this scheme, and both are equal to the AUROC.</p>
+</div>
+<div id="formal-proof" class="section level1">
+<h1>Formal proof</h1>
+<p>The equivalence of AUROC, average TPF, and the concordance probability can be formally shown in a straightforward manner that, in some ways, mimics the scheme above:</p>
+<p>Consider the ROC curve drawn in <span class="math inline">\((x, y)\)</span> coordinates, with <span class="math inline">\(x \in [0, 1]\)</span> and <span class="math inline">\(y \in [0, 1]\)</span>. The ROC curve is a function of <span class="math inline">\(x\)</span>, say <span class="math inline">\(g(x)\)</span>. By definition,</p>
+<p><span class="math display">\[\begin{equation}
+\text{AUROC} = \int_0^1 g(x) dx
+\end{equation}\]</span></p>
+<p>Let <span class="math inline">\(F_S(s) = \text{P}(S \leq s)\)</span> be the cdf for non-disease patient scores, <span class="math inline">\(S\)</span> being a randomly drawn non-disease patient score. Let <span class="math inline">\(F_T(t) = \text{P}(T \leq t)\)</span> be the cdf for disease patient scores, <span class="math inline">\(T\)</span> being a random disease patient score. Then again by the definition of ROC curve, as the TPF for a given FPF, <span class="math inline">\(g(x) = \text{P}(T &gt; s)\)</span> for the score <span class="math inline">\(s\)</span> which satisfies <span class="math inline">\(\text{P}(S &gt; s) = x\)</span>, i.e. <span class="math inline">\(1 - F_S(s) = x\)</span>. Therefore, <span class="math inline">\(s = F_S^{-1}(1 - x)\)</span> and</p>
+<p><span class="math display">\[\begin{equation}
+g(x) = 1 - F_T(F_S^{-1}(1 - x))
+\end{equation}\]</span></p>
+<p>In the integral for the AUROC,</p>
+<p><span class="math display">\[\begin{equation}
+\text{AUROC} = \int_0^1 \left[ 1 - F_T(F_S^{-1}(1 - x)) \right] dx
+\end{equation}\]</span></p>
+<p>we change variable from <span class="math inline">\(x\)</span> to <span class="math inline">\(s = F_S^{-1}(1 - x)\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+\text{AUROC} &amp;= \int_{\infty}^{-\infty} \left[ 1 - F_T(s) \right] [-dF_S(s)] \\
+&amp;= \int_{-\infty}^{\infty} \left[ 1 - F_T(s) \right] dF_S(s)
+\end{align}\]</span></p>
+<p>It follows that</p>
+<p><span class="math display">\[\begin{align}
+\text{AUROC} &amp;= \int_{-\infty}^{\infty} \text{P}(T &gt; s) dF_S(s) \\
+&amp;= \int_{-\infty}^{\infty} \text{P}(T &gt; s | S = s) dF_S(s) \\
+&amp;= \text{P}(T &gt; S)
+\end{align}\]</span></p>
+<p>which is the concordance probability. The second line is due to the independence of <span class="math inline">\(S\)</span> and <span class="math inline">\(T\)</span> (and also expresses AUROC as an average TPF).</p>
+<p>Therefore, AUROC = average TPF = concordance probability.</p>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>I’ll use terms that would describe many settings in clinical research: a <em>score</em> is obtained for each patient in the population and used to predict whether the <em>patient</em> has a <em>disease</em> or not. A score may be dichotomized into categories of <em>positive</em> and <em>negative</em>. Be aware that different terms might be appropriate for different settings, but the quantitative issues are the same. I’ll assume that a higher score is associated with having disease.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>Pepe, M. S. (2003). <em>The Statistical Evaluation of Medical Tests for Classification and Prediction</em>. New York: Oxford University Press.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>Ibid, p. 77–79.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>Imagine lining up the non-disease patients, equally spaced, along a line between 0 and 1, in order of their score. Choosing a random patient essentially is the same as choosing a random number between 0 and 1, and selecting the patient nearest that number on the line.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
