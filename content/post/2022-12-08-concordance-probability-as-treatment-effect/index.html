@@ -1,0 +1,44 @@
+---
+title: "Concordance probability as a measure of treatment effect"
+author: "Camden Lopez"
+date: "2022-12-08"
+slug: concordance-probability-as-treatment-effect
+categories: []
+tags: []
+---
+
+
+
+<p>The area under the ROC curve (AUROC) is a familiar metric for how accurately a measurement or risk score discriminates between, say, individuals with and without a particular disease. My previous post describes how AUROC is equal to the concordance probability:</p>
+<blockquote>
+<p>The AUROC is the probability that, in a random pairing of a disease patient with a non-disease patient, the disease patient has the higher score.</p>
+</blockquote>
+<p>In this view, the distribution of a variable with a continuous (or at least ordinal) value — the score — is serving as a <em>predictor</em>, and a membership in one of two populations — disease or non-disease — is serving as a kind of dichotomous <em>outcome</em>.</p>
+<p>However, the concordance probability is simply an indicator of how one distribution compares to another — how disease patient scores compare to non-disease patient scores. It’s very general: Given <em>X</em> drawn from one population, and <em>Y</em> drawn independently from another, how often is <em>X</em> greater than <em>Y</em>?</p>
+<p>I wondered about the concordance probability being used with the roles of predictor and outcome reversed: Suppose we want an indicator of how a continuous or ordinal <em>outcome</em> compares between two populations, with membership in (or assignment to) one of the populations serving as a kind of <em>predictor</em>. Suppose — suppose! — we use concordance probability as a standardized metric for the effect of one treatment compared to another on an outcome?</p>
+<p>I shouldn’t have been surprised when I found that Margaret Pepe’s book,<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> which was so helpful for my previous post, touches on this use of AUROC:</p>
+<blockquote>
+<p>It has been noted that [ROC curves] can also be useful in applications outside of diagnostic testing. In essence, the ROC curve is a statistical tool that describes the separation between two distributions, <span class="math inline">\(S_D\)</span> and <span class="math inline">\(S_{\overline{D}}\)</span>, and so it can be useful in any setting where separations between distributions are of interest. For example, such a description can be valuable for evaluating treatment effects on an outcome in a clinical trial or for evaluating risk factors for disease.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></p>
+</blockquote>
+<p>With a brief literature search, I discovered that this is not just a cute idea among statisticians. The idea has been raised, at a minimum, in both psychology and psychopharmacology, with variations in the terminology.</p>
+<p>In psychology, McGraw and Wong<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> proposed the concordance probability as a way to state effect size, calling it the <em>common language effect size</em>, or <em>CL</em>. They write that</p>
+<blockquote>
+<p>The primary value of the proposed statistic is that it is better than the available alternatives for communicating effect size to audiences untutored in statistics.</p>
+</blockquote>
+<p>(This seems to explain the choice of “common language” to name it.) The alternatives they mention are Cohen’s <em>d</em> and several others I wasn’t familiar with. Indeed, one reason why I thought about the AUROC as potentially useful beyond diagnostic or predictive accuracy is that it seems intuitive and easy to explain to non-statisticians.</p>
+<p>In psychopharmacology, Faraone et al.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> proposed the <em>drug-response curve</em>, which is the ROC curve by another name, and the area under the curve as tools to help “clarify the clinical relevance of drug-placebo differences that have already been shown to be statistically significant.” In their perspective, the curve represents a plot of response rate in the experimental drug group versus response rate in the placebo group, where “response” means having an outcome above a certain threshold. The curve is drawn by varying the threshold. This is exactly the same construction as an ROC curve, but I hadn’t thought of the coordinates in terms of response rates.</p>
+<p>After this bit of reading, I have a few questions that I want to investigate further:</p>
+<ul>
+<li>What are desirable characteristics of a standardized metric of treatment effect? And in terms of these characteristics, how does the concordance probability compare to alternatives?</li>
+<li>Are there situations in clinical research, or elsewhere, in which the concordance probability is clearly inferior as a measure of effect? Where it indicates that effect <em>A</em> compares to effect <em>B</em> in a manner which seems clearly incorrect?</li>
+<li>When the outcome is a censored time to event, what estimates of the concordance probability are possible?</li>
+</ul>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>Pepe, M. S. (2003). <em>The Statistical Evaluation of Medical Tests for Classification and Prediction</em>. New York: Oxford University Press.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>Ibid, p. 74.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>McGraw, K. O., and Wong, S. P. (1992). “A Common Language Effect Size Statistic.” <em>Psychological Bulletin</em> 111(2), 361–365.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>Faraone, S. V., Biederman, J., Spencer, T. J., and Wilens, T. E. (2000). “The Drug-Placebo Response Curve: A New Method for Assessing Drug Effects in Clinical Trials.” <em>Journal of Clinical Psychopharmacology</em> 20(6), 673–679.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
