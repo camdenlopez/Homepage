@@ -1,0 +1,52 @@
+---
+title: "Statistical estimands related to P(X>Y)"
+author: "Camden Lopez"
+date: "2023-01-03"
+slug: statistical-estimands-related-to-pxy
+categories: []
+tags: []
+---
+
+Since posting about the area under the ROC curve and "concordance probability" as a potential measure of treatment effect, I've wanted to better understand the history and current state of this idea. To what extent have statisticians investigated this measure and developed methodology around it? To what extent has the "concordance probability" been used in practice? Are there reasons why it hasn't been more widely used?
+
+This is a summary of literature on $\text{P}(X > Y)$ as a measure for comparing two population distributions and quantifying treatment effect. By $X$ and $Y$, I mean random outcomes from the two populations being compared (e.g. $X$ = outcome for a patient treated with an experimental treatment, and $Y$ = outcome for a patient receiving a control treatment). I found that several related quantities have been proposed, and I include references about those.
+
+Searching the literature for this topic has been a little difficult because there's no single term used consistently for $\text{P}(X > Y)$ (some authors don't even attempt to name it). I suspect there are still important references out there that I haven't found yet, and if so, I'll keep adding to this post.
+
+# P(X>Y) and P(X>Y) + &half; P(X=Y)
+
+__Gini, C. (1916), "Il concetto di 'transvariazione' e le sue prime applicazioni," *Giornale degli Economisti e Rivista di Statistica*, 53, 13--43.__ According to Kruskal,^[Kruskal, W. H. (1957), "Historical notes on the Wilcoxon unpaired two-sample test," *Journal of the American Statistical Association* 52(279), 356--360.] Gini proposed a quantity equivalent to $\text{P}(X > Y) + \frac{1}{2} \text{P}(X = Y)$ which he called the *probability of transvariation*. I haven't actually accessed Gini's paper (and wouldn't be able to read the Italian).
+
+__Ottaviani, G. (1939), "Sulla probabilit&agrave; che una prova su due variabili casuali $X$ e $Y$ verifichi la disuguaglianza $X<Y$ e sul corrispondente scarto quadratico medio," *Giornale dell' Istituto Italiano degli Attuari*, 10, 186--192.__ Again according to Kruskal,^[Ibid.] Ottaviani wrote about estimation of $\text{P}(X > Y)$ using $\frac{U}{mn}$. Here I use $U$ to refer to the statistic that Mann and Whitney (1947) would later propose.
+
+__Wilcoxon, F. (1945), "Individual comparisons by ranking methods," *Biometrics Bulletin*, 1(6), 80--83.__ Proposed the rank-sum test for two-sample comparison but didn't specify the statistical hypotheses being tested or a parameter that might be estimated. Ties were handled by assigning an average rank to each outcome in a group of tied outcomes. The rank-sum test is still one of the most common non-parametric tests, and it was a basis for development of hypothesis testing and estimation for $\text{P}(X > Y)$.
+
+__Mann, H. B., and Whitney, D. R. (1947), "On a test of whether one of two random variables is stochastically larger than the other," *Annals of Mathematical Statistics*, 18(1), 50--60.__ Proposed specific hypotheses to be tested by a Wilcoxon-inspired, rank-based test: a null hypothesis of equal cdfs between two populations, and an alternative of one population cdf being stochastically larger, i.e. $F_X(z) > F_Y(z)$ for all $z$. The test statistic was $U$, the number of pairs $(x_i, y_j)$ for which $x_i > y_j$ among all pairs of an outcome from one sample ($x_i$) with an outcome from the other ($y_j$). It was assumed that no ties occur. A simple formula relates $U$ to Wilcoxon's rank-sum statistic. Still no parameter was identified --- the only interest was in hypothesis testing.
+
+__Birnbaum, Z. W. (1956), "On a use of the Mann-Whitney statistic," *Proceedings of the Third Berkeley Symposium on Mathematical Statistics and Probability*, 1, 13--17.__ Gave attention to $p = \text{P}(X > Y)$ as a parameter one might want to estimate --- for example, in evaluating the reliability of mechanical components. Considered estimation of $p$ using $\hat{p} = \frac{U}{mn}$, the Mann-Whitney statistic divided by the number of pairs in the sample, and construction of confidence intervals when one can't rely on large-sample normality.
+
+__Klotz, J. H. (1966), "The Wilcoxon, ties, and the computer," *Journal of the American Statistical Association*, 61(315), 772--787.__ Suggested $\text{P}(X > Y) + \frac{1}{2} \text{P}(X = Y)$ as a reasonable measure of the degree of separation of two distributions, in the context of discussing the null distribution for the Wilcoxon (Mann-Whitney) test.
+
+__Wolfe, D. A. and Hogg, R. V. (1971), "On constructing statistics and reporting data," *The American Statistician*, 25(4), 27--30.__ Suggested that $\text{P}(X > Y)$ is a measure for comparing two distributions that is widely applicable and more immediately interpretable than, for example, $(\mu_2 - \mu_1) / \sigma$. Showed how $\text{P}(X > Y)$ can be a basis for common statistical comparisons and tests, both parametric and non-parametric.
+
+__McGraw, K. O. and Wong, S. P. (1992), "A common language effect size statistic," *Psychological Bulletin*, 111(2), 361--365.__ Proposed using $\text{P}(X > Y)$, which they term *CL*, as a measure of effect size, writing that it "is so readily understood by nonstatisticians that we have chosen to call it the *common language effect size* indicator." Echoing Wolfe and Hogg (1971), they considered *CL* more readily interpretable than Cohen's *d* (a standardized mean difference) and several other effect size indicators.
+
+__Grissom, R. J. (1994), "Probability of the superior outcome of one treatment over another," *Journal of Applied Psychology*, 79(2), 314--316.__ Cited Wolfe and Hogg (1971), and McGraw and Wong (1992), but suggested calling $\text{P}(X > Y)$ the *probability of superiority* (*PS*).
+
+__Hauck, W. W., Hyslop, T., and Anderson, S. (2000), "Generalized treatment effects for clinical trials," *Statistics in Medicine*, 19, 887--899.__ Drawing inspiration from a paper^[O'Brien, P. C. (1988), "Comparing two samples: Extensions of the *t*, rank-sum, and log-rank tests," *Journal of the American Statistical Association*, 83(401), 52--61.] about improving two-sample comparisons, suggested $\text{P}(X > Y)$ specifically as the target parameter for assessing treatment effects in clinical trials. Noted that it's easily understood by clinical, non-statistical colleagues.
+
+__Vargha, A., and Delaney, H. D. (2000), "A critique and improvement of the 'CL' common language effect size statistics of McGraw and Wong," *Journal of Educational and Behavioral Statistics*, 25(2), 101--132.__ Commenting on McGraw and Wong's (1992) proposal of *CL* = $\text{P}(X > Y)$ as an effect size metric, Vargha and Delaney suggested $\text{P}(X > Y) + \frac{1}{2} \text{P}(X = Y)$ instead, denoting it *A* and naming it the *measure of stochastic superiority*. They wrote, "If [the outcome] is discrete], *A* can be interpreted as an estimate of the value of *CL* that would be obtained if the distribution of [the outcome] were continuous."
+
+__Acion, L., Peterson, J. J., Temple, S., and Arndt, S. (2006), "Probabilistic index: an intuitive non-parametric approach to measuring the size of treatment effects," *Statistics in Medicine*, 25, 591--602.__ Yet another proposal to use the "probabilistic index" $\text{P}(X > Y)$ as an intuitive measure of treatment effect. Described calculating $\hat{\text{P}}(X > Y)$ in a manner that actually would estimate $\text{P}(X > Y) + \frac{1}{2} \text{P}(X = Y)$.
+
+__Agresti, A. (2010), *Analysis of Ordinal Categorical Data* (2nd ed.), Hoboken, NJ: John Wiley and Sons.__ Used $\alpha$ to denote the "stochastic superiority" measure $\alpha = \text{P}(X > Y) + \frac{1}{2} \text{P}(X = Y)$ in the setting of an ordinal outcome compared between two groups, giving credit to Vargha and Delaney^[Vargha, A., and Delaney, H. D. (1998), "The Kruskal-Wallis test and stochastic homogeneity," *Journal of Educational and Behavioral Statistics*, 23(2), 170--192.] for the term *stochastic superiority* (p. 13--14). Cites other non-parametric statistics literature that uses $\alpha$ (p. 41).
+
+# P(X>Y) -- P(Y>X) and [P(X>Y) -- P(Y>X)] / P(X&ne;Y)
+
+__Deuchler, G. (1914), "&Uuml;ber die Methoden der Korrelationsrechnung in der P&auml;dagogik und Psychologie," *Zeitschrift f&uuml;r P&auml;dagogische Psychologie und Experimentelle P&auml;dagogik*, 15, 114--131, 145--159, 229--242.__ According to Kruskal,^[Kruskal, W. H. (1957).] Deuchler suggested a method for comparing two samples that was essentially equivalent to the Wilcoxon rank-sum test. The test statistic could be considered a sample estimate of $\frac{\text{P}(X>Y) - \text{P}(Y>X)}{\text{P}(X \ne Y)}$.
+
+__Goodman, L. A., and Kruskal, W. H. (1954), "Measure of association for cross classifications," *Journal of the American Statistical Association*, 49(268), 732--764.__ Proposed a measure of association between two ordinal variables, $\gamma = \frac{\Pi_s - \Pi_d}{1 - \Pi_t}$. $\Pi_s$ is the probability that, in a random pair of individuals from a population, the comparison of measurements of one variable will agree with the comparison of measurements of the other variable; in other words, either individual 1 has the greater value in both variables, or individual 2 has the greater value in both variables. $\Pi_d$ is the probability that the comparison for one variable disagrees with the comparison of the other; $\Pi_t$ is the probability of a tie in either variable. The same measure $\gamma$ could be used for comparison of two population distributions by measuring the "correlation" of membership in one population (vs the other) with an ordinal outcome variable. Allowing the outcome to be continuous is another simple extension.
+
+__Simonoff, J. S., Hochberg, Y., and Reiser, B. (1986), "Alternative estimation procedures for Pr(X < Y) in categorized data," *Biometrics*, 42, 895--907.__ Considered $\text{P}(X > Y)$ to be an important estimand, but suggested estimating $\lambda = \text{P}(X > Y) - \text{P}(Y > X)$ instead when $\text{P}(X = Y) > 0$.
+
+__Cliff, N. (1993), "Dominance statistics: Ordinal analyses to answer ordinal questions," *Psychological Bulletin*, 114(3), 494--509.__ Argued for use of ordinal methods in behavioral science, and suggested focusing on $\delta = \text{P}(X > Y) - \text{P}(Y > X)$. Considered $\delta$ preferable to $\text{P}(X > Y)$ because of the possibility of ties.
