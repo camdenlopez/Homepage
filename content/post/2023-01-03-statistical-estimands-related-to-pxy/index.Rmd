@@ -59,7 +59,7 @@ __Cliff, N. (1993), "Dominance statistics: Ordinal analyses to answer ordinal qu
 
 # Connection to area under the ROC (above the OD) curve
 
-__Bamber, D. (1975), "The area above the ordinal dominance graph and the area below the receiver operating characteristic graph," *Journal of Mathematical Psychology*, 12, 387--415.__ Describes how $\text{P}(X > Y) + \frac{1}{2}\text{P}(X = Y)$ is equal to the area above the ordinal dominance (OD) graph, which plots $\text{P}(X \leq c)$ vs $\text{P}(Y \leq c)$, and the area under the ROC graph, which plots $\text{P}(X > c)$ vs $\text{P}(Y > c)$, assuming one uses the trapezoidal method to compute area.
+__Bamber, D. (1975), "The area above the ordinal dominance graph and the area below the receiver operating characteristic graph," *Journal of Mathematical Psychology*, 12, 387--415.__ Described how $\text{P}(X > Y) + \frac{1}{2}\text{P}(X = Y)$ is equal to the area above the ordinal dominance (OD) graph, which plots $\text{P}(X \leq c)$ vs $\text{P}(Y \leq c)$, and the area under the ROC graph, which plots $\text{P}(X > c)$ vs $\text{P}(Y > c)$, assuming one uses the trapezoidal method to compute area.
 
 # Estimation
 
