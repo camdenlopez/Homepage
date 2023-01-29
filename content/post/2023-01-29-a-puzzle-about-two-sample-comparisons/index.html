@@ -1,0 +1,402 @@
+---
+title: "A puzzle about two-sample comparisons"
+author: "Camden Lopez"
+date: "2023-01-29"
+slug: a-puzzle-about-two-sample-comparisons
+categories: []
+tags: []
+---
+
+
+
+<p>I’ve been reading about probabilistic index models (PIMs).<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This is a type of regression model that assesses the dependence of an outcome <span class="math inline">\(Y\)</span> on covariates (or group membership) based on the “probabilistic index,” <span class="math inline">\(\text{P}(Y &lt; Y^* | X, X^*) + \frac{1}{2} \text{P}(Y = Y^* | X, X^*)\)</span>.</p>
+<p>An interesting thing about these models is that for a sample of size <span class="math inline">\(n\)</span>, the model fitting procedure (unless one customizes it) uses all <span class="math inline">\(\frac{n(n-1)}{2}\)</span> pairwise comparisons of the covariates and outcomes. If your data set looks like</p>
+<table>
+<thead>
+<tr class="header">
+<th align="right">x</th>
+<th align="right">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">-0.47</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="right">-0.14</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="right">-1.61</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="right">-1.37</td>
+</tr>
+</tbody>
+</table>
+<p>then the model is fit to a data set like</p>
+<table>
+<thead>
+<tr class="header">
+<th align="right">x1</th>
+<th align="right">y1</th>
+<th align="right">x2</th>
+<th align="right">y2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">-0.47</td>
+<td align="right">2</td>
+<td align="right">-0.14</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">-0.47</td>
+<td align="right">3</td>
+<td align="right">-1.61</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">-0.47</td>
+<td align="right">4</td>
+<td align="right">-1.37</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="right">-0.14</td>
+<td align="right">3</td>
+<td align="right">-1.61</td>
+</tr>
+<tr class="odd">
+<td align="right">2</td>
+<td align="right">-0.14</td>
+<td align="right">4</td>
+<td align="right">-1.37</td>
+</tr>
+<tr class="even">
+<td align="right">3</td>
+<td align="right">-1.61</td>
+<td align="right">4</td>
+<td align="right">-1.37</td>
+</tr>
+</tbody>
+</table>
+<p>where each row in the original data is compared with each other row.</p>
+<p>This is a problem when <span class="math inline">\(n\)</span> is large. Fitting the model can be cumbersome or just infeasible. Why does this model require all pairwise comparisons, whereas other regression models don’t?</p>
+<p>One answer might be: a PIM is inherently a model of an outcome resulting from pairwise comparisons, whereas a linear regression model or GLM is inherently a model of an individual’s outcome.</p>
+<p>But suppose one formed a regression model for <span class="math inline">\(\text{E}(Y - Y^* | X, X^*)\)</span> where <span class="math inline">\(X\)</span> represents covariates associated with <span class="math inline">\(Y\)</span>, and <span class="math inline">\(X^*\)</span> contains covariates for <span class="math inline">\(Y^*\)</span>. This would be a model for pairwise comparisons of outcomes, yet the coefficients in</p>
+<p><span class="math display">\[\begin{equation*}
+\text{E}(Y - Y^* | X, X^*) = \beta_1 (X_1 - X_1^*) + \beta_2 (X_2 - X_2^*) + ...
+\end{equation*}\]</span></p>
+<p>are exactly the same as those in the linear regression model</p>
+<p><span class="math display">\[\begin{equation*}
+\text{E}(Y | X) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + ...
+\end{equation*}\]</span></p>
+<p>which can be fit using just the <span class="math inline">\(n\)</span> observations; still no need for the <span class="math inline">\(\frac{n(n-1)}{2}\)</span> pairs.</p>
+<div id="two-sample-comparisons" class="section level1">
+<h1>Two-sample comparisons</h1>
+<p>What about a simpler setting, comparing an outcome variable between two populations with no consideration of covariates?</p>
+<p>Suppose I independently sample <span class="math inline">\(n_0\)</span> individuals from one population and <span class="math inline">\(n_1\)</span> individuals from another. For each individual, I observe outcome <span class="math inline">\(Y\)</span>. Assume <span class="math inline">\(Y\)</span> is continuous. I’ll use <span class="math inline">\(Y_0\)</span> and <span class="math inline">\(Y_1\)</span> to denote random outcomes from the two populations, sampled independently.</p>
+<p>To make a statistical comparison between the two populations, the conventional options are</p>
+<ol style="list-style-type: decimal">
+<li>A <em>t</em>-test, which can be considered a parametric test about the value of <span class="math inline">\(\text{E}(Y_1) - \text{E}(Y_0)\)</span> assuming <span class="math inline">\(Y_1\)</span> and <span class="math inline">\(Y_0\)</span> each is normally distributed (though it works as a test about <span class="math inline">\(\text{E}[Y_1] - \text{E}[Y_0]\)</span> in many non-normal settings).</li>
+<li>A Wilcoxon (Mann-Whitney) test, which can be considered a non-parametric test about the value of <span class="math inline">\(\text{P}(Y_1 &gt; Y_0)\)</span> (plus <span class="math inline">\(\frac{1}{2}\text{P}[Y_1 = Y_0]\)</span> if ties are possible).</li>
+</ol>
+<p>I’ve always thought of option #1 as first summarizing each population with its mean (expected value), then comparing the means. Another way to think about it, which I didn’t consider until recently, is that you imagine sampling a random pair of outcomes, <span class="math inline">\((Y_0, Y_1)\)</span>, compare them by taking a difference <span class="math inline">\(Y_1 - Y_0\)</span>, and look at the mean over all such comparisons, <span class="math inline">\(\text{E}(Y_1 - Y_0)\)</span>.</p>
+<p>Of course, <span class="math inline">\(\text{E}(Y_1 - Y_0)\)</span> is mathematically the same as <span class="math inline">\(\text{E}(Y_1) - \text{E}(Y_0)\)</span>. The reason for making a distinction is when thinking about an alternative comparison based on <span class="math inline">\(\text{P}(Y_1 &gt; Y_0)\)</span>.</p>
+<p>For the Mann-Whitney test statistic, or for the sample estimate of <span class="math inline">\(\text{P}(Y_1 &gt; Y_0)\)</span>, the computation essentially involves comparing each value of <span class="math inline">\(Y\)</span> in one sample to each value of <span class="math inline">\(Y\)</span> in the other. The M-W statistic is the number of pairs <span class="math inline">\((y_{0i}, y_{1j})\)</span> for which <span class="math inline">\(y_{0i} &lt; y_{1j}\)</span> (I’m assuming no ties). The sample estimate of <span class="math inline">\(\text{P}(Y_1 &gt; Y_0)\)</span> is the mean of</p>
+<p><span class="math display">\[\begin{equation*}
+c(y_{0i}, y_{1j}) =
+\begin{cases}
+1 \text{ if } y_{0i} &lt; y_{1j} \\
+0 \text{ if } y_{0i} &gt; y_{1j}
+\end{cases}
+\end{equation*}\]</span></p>
+<p>overall all <span class="math inline">\(n_0 \times n_1\)</span> pairs. Thus, there’s a natural connection between the concept of <span class="math inline">\(\text{P}(Y_1 &gt; Y_0)\)</span> as a mean over all pairwise comparisons between the two populations, and the actual computation for inference about <span class="math inline">\(\text{P}(Y_1 &gt; Y_0)\)</span> from a sample.</p>
+<p>In the case of <span class="math inline">\(\text{E}(Y_1 - Y_0)\)</span>, the computation <em>doesn’t</em> require looking at all <span class="math inline">\(n_0 \times n_1\)</span> differences <span class="math inline">\(y_{1j} - y_{0i}\)</span>. Primarily, the information about <span class="math inline">\(\text{E}(Y_1 - Y_0)\)</span> boils down to the sample means, <span class="math inline">\(\overline{y}_1 - \overline{y}_0\)</span>. Suppose <span class="math inline">\(n_0 = n_1 = n\)</span>. Then</p>
+<p><span class="math display">\[\begin{align*}
+\overline{y}_1 - \overline{y}_0 &amp;= \frac{1}{n} \sum_{i=1}^n y_{1i} - \frac{1}{n} \sum_{i=1}^n y_{0i} \\
+&amp;= \frac{1}{n} \sum_{i=1}^n (y_{1i} - y_{0i})
+\end{align*}\]</span></p>
+<p>which involves only <span class="math inline">\(n\)</span> of the <span class="math inline">\(y_{1j} - y_{0i}\)</span> differences. A similar simplification is possible when <span class="math inline">\(n_0 \ne n_1\)</span>. Whether <span class="math inline">\(n_0 = n_1\)</span> or not, it seems that the number of arithmetic comparisons needed to extract all the information about <span class="math inline">\(\text{E}(Y_1 - Y_0)\)</span> from the sample will be roughly proportional to <span class="math inline">\(n_0 + n_1\)</span>, not <span class="math inline">\(n_0 \times n_1\)</span>.</p>
+</div>
+<div id="looking-closer" class="section level1">
+<h1>Looking closer</h1>
+<p>Although this is starting to sound like a matter of algorithm analysis and big-<em>O</em> classification of the two-sample mean comparison, versus the two-sample Mann-Whitney comparison, I’m not just interested in computational steps needed for specific estimands or test statistics. I’m trying to understand at an intuitive level why one population comparison requires more pairwise comparisons than another.</p>
+<p>Here’s one attempt:</p>
+<p>Suppose that <span class="math inline">\(Y\)</span> is the variable I want to compare, and <span class="math inline">\(X\)</span> indicates whether an individual belongs to one population <span class="math inline">\((x = 1)\)</span> or the other <span class="math inline">\((x = 0)\)</span>.</p>
+<p>Suppose I sample one individual at a time and observe <span class="math inline">\((x_i, y_i)\)</span>. With each individual, I consider which comparisons between it and other, previously sampled individuals are informative about <span class="math inline">\(\delta = \text{E}(Y_1 - Y_0)\)</span> and <span class="math inline">\(\phi = \text{P}(Y_1 &gt; Y_0)\)</span>, where <span class="math inline">\(Y_1\)</span> and <span class="math inline">\(Y_0\)</span> are independently sampled from the populations with <span class="math inline">\(X = 1\)</span> and <span class="math inline">\(X = 0\)</span>, respectively.</p>
+<p>When <span class="math inline">\(\delta\)</span> is of interest, I’ll consider the <span class="math inline">\(x_i\)</span> vs <span class="math inline">\(x_j\)</span> comparison and <span class="math inline">\(y_i - y_j\)</span> as potential input for an algorithm that will estimate <span class="math inline">\(\delta\)</span> in some kind of optimal way, and I’ll ask, do I expect that adding this input could potentially change the estimate?</p>
+<p>On the other hand, if <span class="math inline">\(\phi\)</span> is of interest, my intuition tells me that, whatever intermediate computations are done, when it comes to actually estimating <span class="math inline">\(\phi\)</span>, the only information from each pair <span class="math inline">\((y_i, y_j)\)</span> that the algorithm will incorporate into the estimate is whether <span class="math inline">\(y_i &gt; y_j\)</span>. (Why? I don’t know — just intuition.) So when <span class="math inline">\(\phi\)</span> is of interest, I’ll compute <span class="math inline">\(c(y_i, y_j)\)</span> (see definition above), and I’ll ask whether each <span class="math inline">\(c(y_i, y_j)\)</span> should be added to the input for an algorithm that estimates <span class="math inline">\(\phi\)</span>.</p>
+<div id="part-1" class="section level2">
+<h2>Part 1</h2>
+<p>Start with a setting where I’m estimating <span class="math inline">\(\delta\)</span>. Sample <span class="math inline">\((x_1, y_1)\)</span>, then <span class="math inline">\((x_2, y_2)\)</span>. Let’s assume <span class="math inline">\(x_1 = 0\)</span> and <span class="math inline">\(x_2 = 1\)</span>. Obviously the comparison of these two observations is informative for <span class="math inline">\(\delta\)</span>.</p>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="22%" />
+<col width="60%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(i\)</span> vs <span class="math inline">\(j\)</span></th>
+<th><span class="math inline">\(x_i\)</span> vs <span class="math inline">\(x_j\)</span></th>
+<th>Is <span class="math inline">\(y_i - y_j\)</span> informative for <span class="math inline">\(\delta\)</span>?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p>Next I sample <span class="math inline">\((x_3, y_3)\)</span>. Now consider how <span class="math inline">\((x_1, y_1)\)</span> and <span class="math inline">\((x_2, y_2)\)</span> each compares to <span class="math inline">\((x_3, y_3)\)</span>. Let’s say <span class="math inline">\(x_3 = 1\)</span>. Since <span class="math inline">\(y_3\)</span> is new information about population 1, <span class="math inline">\(y_3 - y_1\)</span> seems clearly informative for <span class="math inline">\(\delta\)</span>. Let’s add it to the input for the algorithm. But <span class="math inline">\(y_3 - y_2\)</span>? Since <span class="math inline">\(y_3 - y_2 = (y_3 - y_1) - (y_2 - y_1)\)</span>, the information that <span class="math inline">\(y_3 - y_2\)</span> represents is already in the rest of the data. There shouldn’t be any reason to provide that value.</p>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="22%" />
+<col width="60%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(i\)</span> vs <span class="math inline">\(j\)</span></th>
+<th><span class="math inline">\(x_i\)</span> vs <span class="math inline">\(x_j\)</span></th>
+<th>Is <span class="math inline">\(y_i - y_j\)</span> informative for <span class="math inline">\(\delta\)</span>?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>3 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>3 vs 2</td>
+<td>1 vs 1</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>Continue with sampling <span class="math inline">\((x_4, y_4)\)</span>, and let’s say <span class="math inline">\(x_4 = 0\)</span>. The difference <span class="math inline">\(y_4 - y_1\)</span> is a difference within group 0, which could affect the estimate of <span class="math inline">\(\text{E}(Y|X = 0)\)</span> and thereby affect the estimate of <span class="math inline">\(\delta\)</span>, so I include it in the input. However, <span class="math inline">\(y_4 - y_2 = (y_4 - y_1) - (y_2 - y_1)\)</span> and <span class="math inline">\(y_4 - y_3 = (y_4 - y_1) - (y_3 - y_1)\)</span>, so those are redundant.</p>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="22%" />
+<col width="60%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(i\)</span> vs <span class="math inline">\(j\)</span></th>
+<th><span class="math inline">\(x_i\)</span> vs <span class="math inline">\(x_j\)</span></th>
+<th>Is <span class="math inline">\(y_i - y_j\)</span> informative for <span class="math inline">\(\delta\)</span>?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>3 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>3 vs 2</td>
+<td>1 vs 1</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>4 vs 1</td>
+<td>0 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>4 vs 2</td>
+<td>0 vs 1</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>4 vs 3</td>
+<td>0 vs 1</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>For each subsequent sample, all that the algorithm would need to know is the difference between the new <span class="math inline">\(y_i\)</span> and <span class="math inline">\(y_1\)</span>. All other differences are redundant. Therefore, after <span class="math inline">\(n\)</span> samples, there will be <span class="math inline">\(n - 1\)</span> informative differences — in other words, <span class="math inline">\(n - 1\)</span> degrees of freedom.</p>
+</div>
+<div id="part-2" class="section level2">
+<h2>Part 2</h2>
+<p>What if I’m interested in <span class="math inline">\(\phi\)</span> instead?</p>
+<p>My intuition here is that what matters for <span class="math inline">\(\phi\)</span> is the order of the <span class="math inline">\(y_i\)</span> values. This might be obvious. The Wilcoxon test, which is based on ranking the combined sample, clearly returns the same result as long as the order of the outcome values is the same.</p>
+<p>More specifically, what matters is where outcomes from group <span class="math inline">\(x = 0\)</span> and group <span class="math inline">\(x = 1\)</span> appear in the sequence of outcomes. Suppose I assign indices <span class="math inline">\(i\)</span> so that <span class="math inline">\(y_1 &lt; y_2 &lt; ... &lt; y_n\)</span>. Then I look at <span class="math inline">\(x_1, x_2, ..., x_n\)</span>, which is a sequence of 0s and 1s. What matters for estimating <span class="math inline">\(\phi\)</span> is that there are, say, three 0s, then one 1, then two 0s, etc., in the sequence of <span class="math inline">\(x\)</span>s. Any other set of outcomes producing the same sequence of 0s and 1s should contain the same information about <span class="math inline">\(\phi\)</span>.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></p>
+<p>Suppose I sample <span class="math inline">\((x_i, y_j)\)</span> one at-a-time with the <span class="math inline">\(x_i\)</span>s being the same as before.</p>
+<p>Clearly comparing <span class="math inline">\((x_1, y_1)\)</span> to <span class="math inline">\((x_2, y_2)\)</span> is informative. I use it to determine which of the following is the sequence of 0s and 1s.</p>
+<p><span class="math display">\[\begin{align*}
+(x_1 = 0) &amp;\cdot (x_2 = 1) \\
+(x_2 = 1) &amp;\cdot (x_1 = 0)
+\end{align*}\]</span></p>
+<p>Suppose <span class="math inline">\(c(y_2, y_1) = 1\)</span>, so I have the first sequence above. Now I sample <span class="math inline">\((x_3, y_3)\)</span> and look at <span class="math inline">\(c(y_3, y_1)\)</span>. Suppose <span class="math inline">\(c(y_3, y_1) = 1\)</span>. Then the possible sequences are</p>
+<p><span class="math display">\[\begin{align*}
+(x_1 = 0) &amp;\cdot (x_3 = 1) \cdot (x_2 = 1) \\
+(x_1 = 0) &amp;\cdot (x_2 = 1) \cdot (x_3 = 1)
+\end{align*}\]</span></p>
+<p>Then it doesn’t matter whether <span class="math inline">\(y_3 &gt; y_2\)</span> or <span class="math inline">\(y_2 &gt; y_3\)</span>; it doesn’t change the pattern of 0s and 1s, so <span class="math inline">\(c(y_3, y_2)\)</span> isn’t informative.</p>
+<p>On the other hand, if <span class="math inline">\(c(y_3, y_1) = 0\)</span>, the only possibility is</p>
+<p><span class="math display">\[\begin{align*}
+(x_3 = 1) \cdot (x_1 = 0) &amp;\cdot (x_2 = 1)
+\end{align*}\]</span></p>
+<p>in which case <span class="math inline">\(c(y_3, y_2)\)</span> isn’t informative because it must be equal to 0.</p>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="22%" />
+<col width="60%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(i\)</span> vs <span class="math inline">\(j\)</span></th>
+<th><span class="math inline">\(x_i\)</span> vs <span class="math inline">\(x_j\)</span></th>
+<th>Is <span class="math inline">\(c(y_i, y_j)\)</span> informative for <span class="math inline">\(\phi\)</span>?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>3 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>3 vs 2</td>
+<td>1 vs 1</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>When I sample <span class="math inline">\((x_4, y_4)\)</span>, the situation gets a little complicated. But I wrote some code to determine which combinations of <span class="math inline">\(c(y_i, y_j)\)</span> comparisons are sufficient to determine the Mann-Whitney statistic from 4 observations, and it showed that (perhaps not surprisingly)</p>
+<ol style="list-style-type: decimal">
+<li>The minimum number of comparisons occurs when using all between-group comparisons (each observation having <span class="math inline">\(x_i = 1\)</span> compared with each having <span class="math inline">\(x_j = 0\)</span>).</li>
+<li>Those between-group comparisons are always necessary; the Mann-Whitney statistic isn’t guaranteed to be completely determined by the data unless all of those comparisons are included in the data.</li>
+</ol>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="22%" />
+<col width="60%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(i\)</span> vs <span class="math inline">\(j\)</span></th>
+<th><span class="math inline">\(x_i\)</span> vs <span class="math inline">\(x_j\)</span></th>
+<th>Is <span class="math inline">\(c(y_i, y_j)\)</span> informative for <span class="math inline">\(\phi\)</span>?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>3 vs 1</td>
+<td>1 vs 0</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>3 vs 2</td>
+<td>1 vs 1</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>4 vs 1</td>
+<td>0 vs 0</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td>4 vs 2</td>
+<td>0 vs 1</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>4 vs 3</td>
+<td>0 vs 1</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p>Running similar code, the same was true when a 5th observation, having <span class="math inline">\(x_5 = 0\)</span>, was added to the mix.</p>
+</div>
+<div id="part-3" class="section level2">
+<h2>Part 3</h2>
+<p>Here’s another way to see mathematically why <span class="math inline">\(\text{E}(Y_1 - Y_0)\)</span> doesn’t require looking at all pairwise differences.</p>
+<p>Suppose the outcomes for population 1 are <span class="math inline">\(x_1, \dots, x_n\)</span>, and the outcomes for population 0 are <span class="math inline">\(y_1, \dots, y_n, y_{n+1}, \dots, y_{n+k}\)</span>. That is, population 0 has more individuals. (Things would work similarly if population 1 had more.)</p>
+<p>The mean difference between all pairs is</p>
+<p><span class="math display">\[\begin{align*}
+\text{E}(X - Y)
+&amp;= \frac{1}{n (n + k)} \sum_{i=1}^{n} \sum_{j=1}^{n+k} (x_i - y_j) \\
+&amp;= \frac{1}{n (n + k)} \left[ \sum_{i=1}^n \sum_{j=1}^n (x_i - y_i) + \sum_{i=1}^n \sum_{j=n+1}^{n+k} (x_i - y_j) \right]
+\end{align*}\]</span></p>
+<p>How do some of these comparisons become redundant? Note that</p>
+<p><span class="math display">\[\begin{equation*}
+x_i - y_j = (x_i - y_i) + (x_j - y_j) - (x_j - y_i)
+\end{equation*}\]</span></p>
+<p>so</p>
+<p><span class="math display">\[\begin{equation*}
+(x_i - y_j) + (x_j - y_i) = (x_i - y_i) + (x_j - y_j)
+\end{equation*}\]</span></p>
+<p>As a result, in the sum over all pairwise differences among the first <span class="math inline">\(n\)</span> individuals in each population, <span class="math inline">\(\sum_{i=1}^n \sum_{j=1}^n (x_i - y_i)\)</span>, the differences with <span class="math inline">\(i \ne j\)</span> can be substituted with <span class="math inline">\(i=j\)</span> differences, yielding</p>
+<p><span class="math display">\[\begin{equation*}
+\sum_{i=1}^n \sum_{j=1}^n (x_i - y_i) = n \sum_{i=1}^n (x_i - y_i)
+\end{equation*}\]</span></p>
+<p>Thus, for comparing the first <span class="math inline">\(n\)</span> individuals in each population, I need only <span class="math inline">\(x_1 - y_1\)</span>, …, <span class="math inline">\(x_n - y_n\)</span>.</p>
+<p>What remains is the <span class="math inline">\(n \times k\)</span> differences between <span class="math inline">\(x_1, \dots, x_n\)</span> and <span class="math inline">\(y_{n+1}, \dots, y_{n+k}\)</span>: <span class="math inline">\(\sum_{i=1}^n \sum_{j=n+1}^{n+k} (x_i - y_j)\)</span>. These too can be reduced to a smaller number of differences. Suppose I start by committing to use <span class="math inline">\(x_n - y_{n+1}\)</span>, <span class="math inline">\(x_n - y_{n+2}\)</span>, …, <span class="math inline">\(x_n - y_{n+k}\)</span> (each “extra” <span class="math inline">\(y\)</span> outcome compared to the last <span class="math inline">\(x\)</span> outcome). Then for the remaining differences, I need only <span class="math inline">\(x_n - x_j\)</span>, for <span class="math inline">\(j = 1, \dots, n-1\)</span>:</p>
+<p><span class="math display">\[\begin{equation*}
+x_i - y_j = (x_n - y_j) + (x_i - x_n)
+\end{equation*}\]</span></p>
+<p>Then I’m using only <span class="math inline">\(n + k - 1\)</span> differences, rather than <span class="math inline">\(n \times k\)</span>. This part actually can simplify in a different, interesting way:</p>
+<p><span class="math display">\[\begin{align*}
+\sum_{i=1}^n \sum_{j=n+1}^{n+k} (x_i - y_j)
+&amp;= k \sum_{i=1}^n x_i - n \sum_{j=n+1}^{n+k} y_j \\
+&amp;= kn \bar{x} - kn \bar{y}_{(-n)}
+\end{align*}\]</span></p>
+<p>where <span class="math inline">\(\bar{y}_{(-n)}\)</span> indicates the mean of the “extra” <span class="math inline">\(y\)</span> values, i.e. after excluding the first <span class="math inline">\(n\)</span> which are matched with corresponding <span class="math inline">\(x\)</span> values.</p>
+<p>The result is</p>
+<p><span class="math display">\[\begin{align*}
+\text{E}(X - Y)
+&amp;= \frac{1}{n (n + k)} \left[ n \sum_{i=1}^n (x_i - y_i) + kn (\bar{x} - \bar{y}_{(-n)}) \right] \\
+&amp;= \frac{n}{n+k} \bar{d}_{(n)} + \frac{k}{n+k} (\bar{x} - \bar{y}_{(-n)}) \\
+&amp;= \frac{n}{n+k} (\bar{x} - \bar{y}_{(n)}) + \frac{k}{n+k} (\bar{x} - \bar{y}_{(-n)})
+\end{align*}\]</span></p>
+<p>where <span class="math inline">\(d_i = x_i - y_i\)</span>, <span class="math inline">\(\bar{d}_{(n)}\)</span> is the mean of <span class="math inline">\(d_1, \dots, d_n\)</span>, and <span class="math inline">\(\bar{y}_{(n)}\)</span> is the mean of <span class="math inline">\(y_1, \dots, y_n\)</span>. Thus, <span class="math inline">\(\text{E}(X - Y)\)</span> can be calculated as a weighted average, combining the average of <span class="math inline">\(n\)</span> “one-to-one” differences with an adjustment for the additional outcomes of the individuals in the larger population.</p>
+</div>
+</div>
+<div id="conclusion" class="section level1">
+<h1>Conclusion</h1>
+<p>To summarize: Estimation of <span class="math inline">\(\text{P}(X &gt; Y)\)</span> requires all pairwise comparisons between the two samples, but estimation of <span class="math inline">\(\text{E}(X - Y)\)</span> requires only a subset of comparisons. One way of understanding the case of <span class="math inline">\(\text{E}(X - Y)\)</span> is that many of the comparisons are redundant. The richer information in each comparison, when those comparisons are differences in an interval-type variable (i.e. a variable for which differences are meaningfully defined), allow for extracting the relevant information about <span class="math inline">\(\text{E}(X - Y)\)</span> from a smaller number of comparisons. Comparisons of the type <span class="math inline">\(c(y_{0i}, y_{1j})\)</span> provide too little information individually to extract the relevant information about <span class="math inline">\(\text{P}(X &gt; Y)\)</span> from a subset of comparisons.</p>
+<p>A question I still have: Whether looking at a simple two-sample comparison or at regression modeling around <span class="math inline">\(\text{P}(X &gt; Y)\)</span>, do some of the pairwise comparisons provide much more information than others? For analysis of large samples, could the comparisons be pruned in some <em>a priori</em> way, to avoid the computational burden of <span class="math inline">\(\frac{n (n-1)}{2}\)</span> comparisons while losing little information?</p>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>Thas, O., Neve, J. D., Clement, L., and Ottoy, J. P. (2012), “Probabilistic index models,” <em>Journal of the Royal Statistical Society: Series B</em>, 74, 623–671.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>The idea of considering sequences of 0s and 1s comes from the paper describing the Mann-Whitney test: Mann, H. B., and Whitney, D. R. (1947), “On a test of whether one of two random variables is stochastically larger than the other,” <em>Annals of Mathematical Statistics</em>, 18(1), 50–60.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>

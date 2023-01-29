@@ -1,0 +1,393 @@
+---
+title: "A puzzle about two-sample comparisons"
+author: "Camden Lopez"
+date: "2023-01-29"
+slug: a-puzzle-about-two-sample-comparisons
+categories: []
+tags: []
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE)
+
+library(combinat)
+library(dplyr)
+library(knitr)
+library(purrr)
+library(tidyr)
+
+set.seed(20230126)
+```
+
+I've been reading about probabilistic index models (PIMs).^[Thas, O., Neve, J. D., Clement, L., and Ottoy, J. P. (2012), "Probabilistic index models," *Journal of the Royal Statistical Society: Series B*, 74, 623--671.] This is a type of regression model that assesses the dependence of an outcome $Y$ on covariates (or group membership) based on the "probabilistic index," $\text{P}(Y < Y^* | X, X^*) + \frac{1}{2} \text{P}(Y = Y^* | X, X^*)$.
+
+An interesting thing about these models is that for a sample of size $n$, the model fitting procedure (unless one customizes it) uses all $\frac{n(n-1)}{2}$ pairwise comparisons of the covariates and outcomes. If your data set looks like
+
+```{r}
+n <- 4
+tbl <-
+  tibble(x = 1:n,
+         y = round(rnorm(n), 2))
+kable(tbl)
+```
+
+then the model is fit to a data set like
+
+```{r}
+i <- combn(1:nrow(tbl), 2)
+tibble(x1 = tbl$x[i[1,]],
+       y1 = tbl$y[i[1,]],
+       x2 = tbl$x[i[2,]],
+       y2 = tbl$y[i[2,]]) %>%
+  kable()
+```
+
+where each row in the original data is compared with each other row.
+
+This is a problem when $n$ is large. Fitting the model can be cumbersome or just infeasible. Why does this model require all pairwise comparisons, whereas other regression models don't?
+
+One answer might be: a PIM is inherently a model of an outcome resulting from pairwise comparisons, whereas a linear regression model or GLM is inherently a model of an individual's outcome.
+
+But suppose one formed a regression model for $\text{E}(Y - Y^* | X, X^*)$ where $X$ represents covariates associated with $Y$, and $X^*$ contains covariates for $Y^*$. This would be a model for pairwise comparisons of outcomes, yet the coefficients in
+
+\begin{equation*}
+\text{E}(Y - Y^* | X, X^*) = \beta_1 (X_1 - X_1^*) + \beta_2 (X_2 - X_2^*) + ...
+\end{equation*}
+
+are exactly the same as those in the linear regression model
+
+\begin{equation*}
+\text{E}(Y | X) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + ...
+\end{equation*}
+
+which can be fit using just the $n$ observations; still no need for the $\frac{n(n-1)}{2}$ pairs.
+
+# Two-sample comparisons
+
+What about a simpler setting, comparing an outcome variable between two populations with no consideration of covariates?
+
+Suppose I independently sample $n_0$ individuals from one population and $n_1$ individuals from another. For each individual, I observe outcome $Y$. Assume $Y$ is continuous. I'll use $Y_0$ and $Y_1$ to denote random outcomes from the two populations, sampled independently.
+
+To make a statistical comparison between the two populations, the conventional options are
+
+1. A *t*-test, which can be considered a parametric test about the value of $\text{E}(Y_1) - \text{E}(Y_0)$ assuming $Y_1$ and $Y_0$ each is normally distributed (though it works as a test about $\text{E}[Y_1] - \text{E}[Y_0]$ in many non-normal settings).
+2. A Wilcoxon (Mann-Whitney) test, which can be considered a non-parametric test about the value of $\text{P}(Y_1 > Y_0)$ (plus $\frac{1}{2}\text{P}[Y_1 = Y_0]$ if ties are possible).
+
+I've always thought of option #1 as first summarizing each population with its mean (expected value), then comparing the means. Another way to think about it, which I didn't consider until recently, is that you imagine sampling a random pair of outcomes, $(Y_0, Y_1)$, compare them by taking a difference $Y_1 - Y_0$, and look at the mean over all such comparisons, $\text{E}(Y_1 - Y_0)$.
+
+Of course, $\text{E}(Y_1 - Y_0)$ is mathematically the same as $\text{E}(Y_1) - \text{E}(Y_0)$. The reason for making a distinction is when thinking about an alternative comparison based on $\text{P}(Y_1 > Y_0)$.
+
+For the Mann-Whitney test statistic, or for the sample estimate of $\text{P}(Y_1 > Y_0)$, the computation essentially involves comparing each value of $Y$ in one sample to each value of $Y$ in the other. The M-W statistic is the number of pairs $(y_{0i}, y_{1j})$ for which $y_{0i} < y_{1j}$ (I'm assuming no ties). The sample estimate of $\text{P}(Y_1 > Y_0)$ is the mean of
+
+\begin{equation*}
+c(y_{0i}, y_{1j}) =
+\begin{cases}
+1 \text{ if } y_{0i} < y_{1j} \\
+0 \text{ if } y_{0i} > y_{1j}
+\end{cases}
+\end{equation*}
+
+overall all $n_0 \times n_1$ pairs. Thus, there's a natural connection between the concept of $\text{P}(Y_1 > Y_0)$ as a mean over all pairwise comparisons between the two populations, and the actual computation for inference about $\text{P}(Y_1 > Y_0)$ from a sample.
+
+In the case of $\text{E}(Y_1 - Y_0)$, the computation *doesn't* require looking at all $n_0 \times n_1$ differences $y_{1j} - y_{0i}$. Primarily, the information about $\text{E}(Y_1 - Y_0)$ boils down to the sample means, $\overline{y}_1 - \overline{y}_0$. Suppose $n_0 = n_1 = n$. Then
+
+\begin{align*}
+\overline{y}_1 - \overline{y}_0 &= \frac{1}{n} \sum_{i=1}^n y_{1i} - \frac{1}{n} \sum_{i=1}^n y_{0i} \\
+&= \frac{1}{n} \sum_{i=1}^n (y_{1i} - y_{0i})
+\end{align*}
+
+which involves only $n$ of the $y_{1j} - y_{0i}$ differences. A similar simplification is possible when $n_0 \ne n_1$. Whether $n_0 = n_1$ or not, it seems that the number of arithmetic comparisons needed to extract all the information about $\text{E}(Y_1 - Y_0)$ from the sample will be roughly proportional to $n_0 + n_1$, not $n_0 \times n_1$.
+
+# Looking closer
+
+Although this is starting to sound like a matter of algorithm analysis and big-*O* classification of the two-sample mean comparison, versus the two-sample Mann-Whitney comparison, I'm not just interested in computational steps needed for specific estimands or test statistics. I'm trying to understand at an intuitive level why one population comparison requires more pairwise comparisons than another.
+
+Here's one attempt:
+
+Suppose that $Y$ is the variable I want to compare, and $X$ indicates whether an individual belongs to one population $(x = 1)$ or the other $(x = 0)$.
+
+Suppose I sample one individual at a time and observe $(x_i, y_i)$. With each individual, I consider which comparisons between it and other, previously sampled individuals are informative about $\delta = \text{E}(Y_1 - Y_0)$ and $\phi = \text{P}(Y_1 > Y_0)$, where $Y_1$ and $Y_0$ are independently sampled from the populations with $X = 1$ and $X = 0$, respectively.
+
+When $\delta$ is of interest, I'll consider the $x_i$ vs $x_j$ comparison and $y_i - y_j$ as potential input for an algorithm that will estimate $\delta$ in some kind of optimal way, and I'll ask, do I expect that adding this input could potentially change the estimate?
+
+On the other hand, if $\phi$ is of interest, my intuition tells me that, whatever intermediate computations are done, when it comes to actually estimating $\phi$, the only information from each pair $(y_i, y_j)$ that the algorithm will incorporate into the estimate is whether $y_i > y_j$. (Why? I don't know --- just intuition.) So when $\phi$ is of interest, I'll compute $c(y_i, y_j)$ (see definition above), and I'll ask whether each $c(y_i, y_j)$ should be added to the input for an algorithm that estimates $\phi$.
+
+## Part 1
+
+Start with a setting where I'm estimating $\delta$. Sample $(x_1, y_1)$, then $(x_2, y_2)$. Let's assume $x_1 = 0$ and $x_2 = 1$. Obviously the comparison of these two observations is informative for $\delta$.
+
+|  $i$ vs $j$  |  $x_i$ vs $x_j$  |  Is $y_i - y_j$ informative for $\delta$?  |
+| ------------ | ---------------- | ------------------------------------------ |
+|      2 vs 1  |          1 vs 0  |                                       Yes  |
+
+Next I sample $(x_3, y_3)$. Now consider how $(x_1, y_1)$ and $(x_2, y_2)$ each compares to $(x_3, y_3)$. Let's say $x_3 = 1$. Since $y_3$ is new information about population 1, $y_3 - y_1$ seems clearly informative for $\delta$. Let's add it to the input for the algorithm. But $y_3 - y_2$? Since $y_3 - y_2 = (y_3 - y_1) - (y_2 - y_1)$, the information that $y_3 - y_2$ represents is already in the rest of the data. There shouldn't be any reason to provide that value.
+
+|  $i$ vs $j$  |  $x_i$ vs $x_j$  |  Is $y_i - y_j$ informative for $\delta$?  |
+| ------------ | ---------------- | ------------------------------------------ |
+|      2 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 2  |          1 vs 1  |                                        No  |
+
+Continue with sampling $(x_4, y_4)$, and let's say $x_4 = 0$. The difference $y_4 - y_1$ is a difference within group 0, which could affect the estimate of $\text{E}(Y|X = 0)$ and thereby affect the estimate of $\delta$, so I include it in the input. However, $y_4 - y_2 = (y_4 - y_1) - (y_2 - y_1)$ and $y_4 - y_3 = (y_4 - y_1) - (y_3 - y_1)$, so those are redundant.
+
+|  $i$ vs $j$  |  $x_i$ vs $x_j$  |  Is $y_i - y_j$ informative for $\delta$?  |
+| ------------ | ---------------- | ------------------------------------------ |
+|      2 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 2  |          1 vs 1  |                                        No  |
+|      4 vs 1  |          0 vs 0  |                                       Yes  |
+|      4 vs 2  |          0 vs 1  |                                        No  |
+|      4 vs 3  |          0 vs 1  |                                        No  |
+
+For each subsequent sample, all that the algorithm would need to know is the difference between the new $y_i$ and $y_1$. All other differences are redundant. Therefore, after $n$ samples, there will be $n - 1$ informative differences --- in other words, $n - 1$ degrees of freedom.
+
+## Part 2
+
+What if I'm interested in $\phi$ instead?
+
+My intuition here is that what matters for $\phi$ is the order of the $y_i$ values. This might be obvious. The Wilcoxon test, which is based on ranking the combined sample, clearly returns the same result as long as the order of the outcome values is the same.
+
+More specifically, what matters is where outcomes from group $x = 0$ and group $x = 1$ appear in the sequence of outcomes. Suppose I assign indices $i$ so that $y_1 < y_2 < ... < y_n$. Then I look at $x_1, x_2, ..., x_n$, which is a sequence of 0s and 1s. What matters for estimating $\phi$ is that there are, say, three 0s, then one 1, then two 0s, etc., in the sequence of $x$s. Any other set of outcomes producing the same sequence of 0s and 1s should contain the same information about $\phi$.^[The idea of considering sequences of 0s and 1s comes from the paper describing the Mann-Whitney test: Mann, H. B., and Whitney, D. R. (1947), "On a test of whether one of two random variables is stochastically larger than the other," *Annals of Mathematical Statistics*, 18(1), 50--60.]
+
+Suppose I sample $(x_i, y_j)$ one at-a-time with the $x_i$s being the same as before.
+
+Clearly comparing $(x_1, y_1)$ to $(x_2, y_2)$ is informative. I use it to determine which of the following is the sequence of 0s and 1s.
+
+\begin{align*}
+(x_1 = 0) &\cdot (x_2 = 1) \\
+(x_2 = 1) &\cdot (x_1 = 0)
+\end{align*}
+
+Suppose $c(y_2, y_1) = 1$, so I have the first sequence above. Now I sample $(x_3, y_3)$ and look at $c(y_3, y_1)$. Suppose $c(y_3, y_1) = 1$. Then the possible sequences are
+
+\begin{align*}
+(x_1 = 0) &\cdot (x_3 = 1) \cdot (x_2 = 1) \\
+(x_1 = 0) &\cdot (x_2 = 1) \cdot (x_3 = 1)
+\end{align*}
+
+Then it doesn't matter whether $y_3 > y_2$ or $y_2 > y_3$; it doesn't change the pattern of 0s and 1s, so $c(y_3, y_2)$ isn't informative.
+
+On the other hand, if $c(y_3, y_1) = 0$, the only possibility is
+
+\begin{align*}
+(x_3 = 1) \cdot (x_1 = 0) &\cdot (x_2 = 1)
+\end{align*}
+
+in which case $c(y_3, y_2)$ isn't informative because it must be equal to 0.
+
+|  $i$ vs $j$  |  $x_i$ vs $x_j$  |  Is $c(y_i, y_j)$ informative for $\phi$?  |
+| ------------ | ---------------- | ------------------------------------------ |
+|      2 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 2  |          1 vs 1  |                                        No  |
+
+When I sample $(x_4, y_4)$, the situation gets a little complicated. But I wrote some code to determine which combinations of $c(y_i, y_j)$ comparisons are sufficient to determine the Mann-Whitney statistic from 4 observations, and it showed that (perhaps not surprisingly)
+
+1. The minimum number of comparisons occurs when using all between-group comparisons (each observation having $x_i = 1$ compared with each having $x_j = 0$).
+2. Those between-group comparisons are always necessary; the Mann-Whitney statistic isn't guaranteed to be completely determined by the data unless all of those comparisons are included in the data.
+
+```{r eval=FALSE}
+y <- permn(1:4)
+tbl <-
+  tibble(y) %>%
+  mutate(mws =
+           map_dbl(y, function (u) {
+             y0 <- u[c(1, 4)]
+             y1 <- u[c(2, 3)]
+             sum(sapply(y1, function (v) sum(v > y0)))
+           }),
+         c21 = map_lgl(y, ~ .[2] > .[1]),
+         c31 = map_lgl(y, ~ .[3] > .[1]),
+         c32 = map_lgl(y, ~ .[3] > .[2]),
+         c41 = map_lgl(y, ~ .[4] > .[1]),
+         c42 = map_lgl(y, ~ .[4] > .[2]),
+         c43 = map_lgl(y, ~ .[4] > .[3]))
+
+for (use21 in c(FALSE, TRUE)) {
+  for (use31 in c(FALSE, TRUE)) {
+    for (use32 in c(FALSE, TRUE)) {
+      for (use41 in c(FALSE, TRUE)) {
+        for (use42 in c(FALSE, TRUE)) {
+          for (use43 in c(FALSE, TRUE)) {
+            data <- ""
+            if (use21) data <- paste0(data, as.numeric(tbl$c21))
+            if (use31) data <- paste0(data, as.numeric(tbl$c31))
+            if (use32) data <- paste0(data, as.numeric(tbl$c32))
+            if (use41) data <- paste0(data, as.numeric(tbl$c41))
+            if (use42) data <- paste0(data, as.numeric(tbl$c42))
+            if (use43) data <- paste0(data, as.numeric(tbl$c43))
+            sufficient <-
+              tbl %>%
+              mutate(data = data) %>%
+              distinct(data, mws) %>%
+              count(data) %>%
+              pull(n) %>%
+              `==`(1) %>%
+              all()
+            if (sufficient)
+              sprintf("21=%d 31=%d 32=%d 41=%d 42=%d 43=%d p=%d\n",
+                      use21, use31, use32,
+                      use41, use42, use43,
+                      use21 + use31 + use32 +
+                        use41 + use42 + use43) %>%
+              cat()
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+|  $i$ vs $j$  |  $x_i$ vs $x_j$  |  Is $c(y_i, y_j)$ informative for $\phi$?  |
+| ------------ | ---------------- | ------------------------------------------ |
+|      2 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 1  |          1 vs 0  |                                       Yes  |
+|      3 vs 2  |          1 vs 1  |                                        No  |
+|      4 vs 1  |          0 vs 0  |                                        No  |
+|      4 vs 2  |          0 vs 1  |                                       Yes  |
+|      4 vs 3  |          0 vs 1  |                                       Yes  |
+
+Running similar code, the same was true when a 5th observation, having $x_5 = 0$, was added to the mix.
+
+```{r eval=FALSE}
+y <- permn(1:5)
+tbl <-
+  tibble(y) %>%
+  mutate(mws =
+           map_dbl(y, function (u) {
+             y0 <- u[c(1, 4, 5)]
+             y1 <- u[c(2, 3)]
+             sum(sapply(y1, function (v) sum(v > y0)))
+           }),
+         c21 = map_lgl(y, ~ .[2] > .[1]),
+         c31 = map_lgl(y, ~ .[3] > .[1]),
+         c32 = map_lgl(y, ~ .[3] > .[2]),
+         c41 = map_lgl(y, ~ .[4] > .[1]),
+         c42 = map_lgl(y, ~ .[4] > .[2]),
+         c43 = map_lgl(y, ~ .[4] > .[3]),
+         c51 = map_lgl(y, ~ .[5] > .[1]),
+         c52 = map_lgl(y, ~ .[5] > .[2]),
+         c53 = map_lgl(y, ~ .[5] > .[3]),
+         c54 = map_lgl(y, ~ .[5] > .[4]))
+
+for (use21 in c(FALSE, TRUE)) {
+  for (use31 in c(FALSE, TRUE)) {
+    for (use32 in c(FALSE, TRUE)) {
+      for (use41 in c(FALSE, TRUE)) {
+        for (use42 in c(FALSE, TRUE)) {
+          for (use43 in c(FALSE, TRUE)) {
+            for (use51 in c(FALSE, TRUE)) {
+              for (use52 in c(FALSE, TRUE)) {
+                for (use53 in c(FALSE, TRUE)) {
+                  for (use54 in c(FALSE, TRUE)) {
+                    data <- ""
+                    if (use21) data <- paste0(data, as.numeric(tbl$c21))
+                    if (use31) data <- paste0(data, as.numeric(tbl$c31))
+                    if (use32) data <- paste0(data, as.numeric(tbl$c32))
+                    if (use41) data <- paste0(data, as.numeric(tbl$c41))
+                    if (use42) data <- paste0(data, as.numeric(tbl$c42))
+                    if (use43) data <- paste0(data, as.numeric(tbl$c43))
+                    if (use51) data <- paste0(data, as.numeric(tbl$c51))
+                    if (use52) data <- paste0(data, as.numeric(tbl$c52))
+                    if (use53) data <- paste0(data, as.numeric(tbl$c53))
+                    if (use54) data <- paste0(data, as.numeric(tbl$c54))
+                    sufficient <-
+                      tbl %>%
+                      mutate(data = data) %>%
+                      distinct(data, mws) %>%
+                      count(data) %>%
+                      pull(n) %>%
+                      `==`(1) %>%
+                      all()
+                    if (sufficient)
+                      sprintf(paste("21=%d 31=%d 32=%d 41=%d 42=%d",
+                                    "43=%d 51=%d 52=%d 53=%d 54=%d p=%d\n"),
+                              use21, use31, use32,
+                              use41, use42, use43,
+                              use51, use52, use53,
+                              use54,
+                              use21 + use31 + use32 +
+                                use41 + use42 + use43 +
+                                use51 + use52 + use53 +
+                                use54) %>%
+                      cat()
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Part 3
+
+Here's another way to see mathematically why $\text{E}(Y_1 - Y_0)$ doesn't require looking at all pairwise differences.
+
+Suppose the outcomes for population 1 are $x_1, \dots, x_n$, and the outcomes for population 0 are $y_1, \dots, y_n, y_{n+1}, \dots, y_{n+k}$. That is, population 0 has more individuals. (Things would work similarly if population 1 had more.)
+
+The mean difference between all pairs is
+
+\begin{align*}
+\text{E}(X - Y)
+&= \frac{1}{n (n + k)} \sum_{i=1}^{n} \sum_{j=1}^{n+k} (x_i - y_j) \\
+&= \frac{1}{n (n + k)} \left[ \sum_{i=1}^n \sum_{j=1}^n (x_i - y_i) + \sum_{i=1}^n \sum_{j=n+1}^{n+k} (x_i - y_j) \right]
+\end{align*}
+
+How do some of these comparisons become redundant? Note that
+
+\begin{equation*}
+x_i - y_j = (x_i - y_i) + (x_j - y_j) - (x_j - y_i)
+\end{equation*}
+
+so
+
+\begin{equation*}
+(x_i - y_j) + (x_j - y_i) = (x_i - y_i) + (x_j - y_j)
+\end{equation*}
+
+As a result, in the sum over all pairwise differences among the first $n$ individuals in each population, $\sum_{i=1}^n \sum_{j=1}^n (x_i - y_i)$, the differences with $i \ne j$ can be substituted with $i=j$ differences, yielding
+
+\begin{equation*}
+\sum_{i=1}^n \sum_{j=1}^n (x_i - y_i) = n \sum_{i=1}^n (x_i - y_i)
+\end{equation*}
+
+Thus, for comparing the first $n$ individuals in each population, I need only $x_1 - y_1$, ..., $x_n - y_n$.
+
+What remains is the $n \times k$ differences between $x_1, \dots, x_n$ and $y_{n+1}, \dots, y_{n+k}$: $\sum_{i=1}^n \sum_{j=n+1}^{n+k} (x_i - y_j)$. These too can be reduced to a smaller number of differences. Suppose I start by committing to use $x_n - y_{n+1}$, $x_n - y_{n+2}$, ..., $x_n - y_{n+k}$ (each "extra" $y$ outcome compared to the last $x$ outcome). Then for the remaining differences, I need only $x_n - x_j$, for $j = 1, \dots, n-1$:
+
+\begin{equation*}
+x_i - y_j = (x_n - y_j) + (x_i - x_n)
+\end{equation*}
+
+Then I'm using only $n + k - 1$ differences, rather than $n \times k$. This part actually can simplify in a different, interesting way:
+
+\begin{align*}
+\sum_{i=1}^n \sum_{j=n+1}^{n+k} (x_i - y_j)
+&= k \sum_{i=1}^n x_i - n \sum_{j=n+1}^{n+k} y_j \\
+&= kn \bar{x} - kn \bar{y}_{(-n)}
+\end{align*}
+
+where $\bar{y}_{(-n)}$ indicates the mean of the "extra" $y$ values, i.e. after excluding the first $n$ which are matched with corresponding $x$ values.
+
+The result is
+
+\begin{align*}
+\text{E}(X - Y)
+&= \frac{1}{n (n + k)} \left[ n \sum_{i=1}^n (x_i - y_i) + kn (\bar{x} - \bar{y}_{(-n)}) \right] \\
+&= \frac{n}{n+k} \bar{d}_{(n)} + \frac{k}{n+k} (\bar{x} - \bar{y}_{(-n)}) \\
+&= \frac{n}{n+k} (\bar{x} - \bar{y}_{(n)}) + \frac{k}{n+k} (\bar{x} - \bar{y}_{(-n)})
+\end{align*}
+
+where $d_i = x_i - y_i$, $\bar{d}_{(n)}$ is the mean of $d_1, \dots, d_n$, and $\bar{y}_{(n)}$ is the mean of $y_1, \dots, y_n$. Thus, $\text{E}(X - Y)$ can be calculated as a weighted average, combining the average of $n$ "one-to-one" differences with an adjustment for the additional outcomes of the individuals in the larger population.
+
+# Conclusion
+
+To summarize: Estimation of $\text{P}(X > Y)$ requires all pairwise comparisons between the two samples, but estimation of $\text{E}(X - Y)$ requires only a subset of comparisons. One way of understanding the case of $\text{E}(X - Y)$ is that many of the comparisons are redundant. The richer information in each comparison, when those comparisons are differences in an interval-type variable (i.e. a variable for which differences are meaningfully defined), allow for extracting the relevant information about $\text{E}(X - Y)$ from a smaller number of comparisons. Comparisons of the type $c(y_{0i}, y_{1j})$ provide too little information individually to extract the relevant information about $\text{P}(X > Y)$ from a subset of comparisons.
+
+A question I still have: Whether looking at a simple two-sample comparison or at regression modeling around $\text{P}(X > Y)$, do some of the pairwise comparisons provide much more information than others? For analysis of large samples, could the comparisons be pruned in some *a priori* way, to avoid the computational burden of $\frac{n (n-1)}{2}$ comparisons while losing little information?
