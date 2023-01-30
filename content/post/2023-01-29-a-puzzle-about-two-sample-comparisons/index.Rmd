@@ -101,7 +101,7 @@ which involves only $n$ of the $y_{1j} - y_{0i}$ differences. A similar simplifi
 
 # Looking closer
 
-Although this is starting to sound like a matter of algorithm analysis and big-*O* classification of the two-sample mean comparison, versus the two-sample Mann-Whitney comparison, I'm not just interested in computational steps needed for specific estimands or test statistics. I'm trying to understand at an intuitive level why one population comparison requires more pairwise comparisons than another.
+Although this is starting to sound like a matter of algorithm analysis and big-*O* classification of the calculations for two-sample mean comparison, versus the two-sample Mann-Whitney comparison, I'm not just interested in computational steps needed for specific estimates or test statistics. I'm trying to understand at an intuitive level why one population comparison requires more pairwise comparisons than another.
 
 Here's one attempt:
 
