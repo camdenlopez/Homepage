@@ -2,4 +2,11 @@
 title: About
 ---
 
-I'm Camden Lopez, a biostatistician with experience contributing to a variety of clinical research, including clinical trials and observational studies in pulmonology, nephrology, cancer, and Alzheimer's disease. See [LinkedIn](https://www.linkedin.com/in/camdenlopez/) for my work history, [PubMed](https://pubmed.ncbi.nlm.nih.gov/?term=Lopez+Camden%5BAuthor%5D) for research publications, and [GitHub](https://github.com/camdenlopez) for samples of my programming.
+# Camden Lopez
+
+I'm a biostatistician with experience primarily in medical research at Mayo Clinic, the Alzheimer's Therapeutic Research Institute, and the University of Michigan. As a statistical analyst, I've worked on projects in nephrology, cancer patient quality of life, and pulmonology, among other areas, including genetic association studies and several clinical trials.
+
+My interests are in statistics education and the roles that statistics and statisticians have in everyday scientific research. It's been my experience that real scientific thinking and careful understanding of data are rare in research, and statisticians too often are passive or reactive in that realm. My ambition is to understand and promote
+
+1. How statistical theory and practice can best align with and support careful scientific reasoning, and
+2. How statisticians can be more proactive and fully involved in the scientific process.
