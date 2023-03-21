@@ -1,0 +1,51 @@
+---
+title: A frustrating report of a clinical trial
+author: Camden Lopez
+date: '2023-03-20'
+slug: a-frustrating-report-of-a-clinical-trial
+categories: []
+tags: []
+---
+
+
+
+<p>In 2020, I did the analysis for a couple of studies of a deep learning prediction model developed to screen patients for atrial fibrillation (AF) based on an electrocardiogram (ECG). The idea is that when a patient has an ECG, it’s read by a human and there might be AF apparent on the ECG; in that case the prediction model isn’t needed. On the other hand, if the ECG shows a normal sinus rhythm, then the patient might still be experiencing episodes of AF or might be at high risk of AF in the near future; all that’s known is that AF wasn’t occurring when the ECG was taken. The prediction model, so-called AI-ECG, is applied to normal sinus rhythm ECGs and outputs a probability that the patient has had AF or will have AF in the near future. The deep learning model presumably identifies AF-associated patterns in the ECG that are too subtle for a human to detect. Patients labeled as high-risk by AI-ECG subsequently could be more closely monitored.</p>
+<p>The AI-ECG model recently was evaluated in a prospective study, the Batch Enrollment for an AI-Guided Intervention to Lower Neurologic Events in Patients with Undiagnosed Atrial Fibrillation (BEAGLE) trial.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> Patients who underwent an ECG at Mayo Clinic were invited to participate. Their ECGs were run through the AI-ECG model to obtain a risk score for each patient. Patients who enrolled in the study were given a device to continuously monitor their heart rhythms for up to 30 days. The heart rhythm monitor provided a “gold standard” diagnosis of incident AF.</p>
+<p>In the Introduction of the article reporting the trial, the trial is described as addressing two questions:</p>
+<ol style="list-style-type: decimal">
+<li>“First, it is unclear whether this AI algorithm offers additional risk stratification power beyond advanced age and other clinical risk factors, which are the traditional approaches to defining monitoring populations.”</li>
+<li>“Second, it is unknown whether, or how much, monitoring in patients AI selected as being at high risk addresses the underdiagnosis of atrial fibrillation in comparison with usual care. Even if the AI successfully selects patients more likely to have atrial fibrillation, the programme is only valuable if it identifies new atrial fibrillation cases that would not have come to clinical attention under usual care without active screening.”</li>
+</ol>
+<p>Reading the Methods and Results sections to understand what the trial results actually say in answer to these questions, I was frustrated on a number of points.</p>
+<div id="validation-of-ai-ecg-risk-stratification" class="section level2">
+<h2>Validation of AI-ECG risk stratification</h2>
+<ul>
+<li>The Methods section says that sensitivity, specificity, negative predictive value (NPV), and positive predictive value (PPV) were calculated for a pre-designated cutoff of the AI-ECG output to classify patients into high- vs low-risk, in detecting AF lasting <span class="math inline">\(\geq\)</span> 30 seconds. But then the Results only explicitly states NPV.
+<ul>
+<li>The PPV (7.6%) is reported but without calling it PPV — why? Is it because PPV 7.6% “looks bad”?</li>
+<li>Sensitivity can be calculated from the numbers in Table 2, <span class="math inline">\(48/(48+6)=89\%\)</span>, and specificity would be <span class="math inline">\((370-6) / [(370-6) + (633-48)]=38\%\)</span>. Again, why not state these outright? Is it because the low specificity looks bad (especially compared to the 79.5% specificity of AI-ECG in the data used to train the model)?</li>
+<li>Or rather, were sensitivity and specificity not reported because the study design didn’t allow them to be estimated in a simple manner? An article<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> describing the study design says that the cohort will be enriched with patients who have higher-risk AI-ECG scores. The <em>Lancet</em> article doesn’t confirm whether this was actually done, though there does seem to be a large number of “high risk” patients (633 high-risk vs 370 low-risk). If it was, then the study participants who actually had AF observed in the study wouldn’t be representative of eligible patients with AF; I would expect the study participants with AF to be enriched with high-scoring patients, and therefore sensitivity of AI-ECG would be inflated. Similarly, specificity would be deflated.</li>
+</ul></li>
+<li>The question posed in the Introduction was whether AI-ECG has value in further stratifying patients in terms of AF risk beyond the risk stratification provided by age and other clinical factors. CHARGE-AF is a risk score based on clinical factors, and the <em>Lancet</em> article reports on the discriminative accuracy of CHARGE-AF for comparison, but there’s this puzzling sentence: “Adding CHARGE-AF on top of the AI-ECG risk score did not improve the discrimination compared with the AI alone.” Shouldn’t they be looking at whether <em>adding AI-ECG on top of CHARGE-AF</em> improves discrimination compared to <em>CHARGE-AF alone</em>?</li>
+</ul>
+</div>
+<div id="comparison-of-ai-ecg-screening-to-usual-care" class="section level2">
+<h2>Comparison of AI-ECG screening to usual care</h2>
+<ul>
+<li>This is the part that really baffles me. Propensity scoring was used to match each study participant with an eligible-but-not-enrolled patient who received “usual care” (as a result of not being enrolled). The purpose of the propensity score matching would be to create a kind of simulated randomized trial, where patients were randomized to the trial intervention or usual care. Probability of AF detection/diagnosis is compared between those receiving the trial intervention and those receiving usual care. The <em>Lancet</em> article’s analysis does this comparison within groups defined by AI-ECG risk (high, low). The trial participants had significantly higher AF diagnosis than the usual care patients among those with high AI-ECG risk, but not among those with low AI-ECG risk.
+<ul>
+<li>But <em>what is the trial intervention</em> for which the effect on AF diagnosis is being estimated here? It’s <em>monitoring a patient with a continuous heart monitor</em>. Of course more cases of AF will be diagnosed if every patient is monitored that way! But the whole point of this investigation is that it’s too cumbersome to screen a large number of patients with this kind of continuous monitoring.</li>
+<li>A news article<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> describing the study results says, “An AI-guided targeted screening strategy is effective in detecting new cases of atrial fibrillation that would not have come to attention in routine clinical care.” No — continuous heart monitoring detected new cases of AF that wouldn’t have come to attention in routine care.</li>
+<li>Any analysis that looks at the effectiveness of a screening strategy for identifying clinically actionable AF cannot be based on a simple objective of maximizing the yield of AF cases — that’s easy, just do intensive monitoring of everyone. There has to be some kind of cost-benefit analysis that also considers the number of patients who get more intensive monitoring or evaluation.</li>
+<li>In this <em>Lancet</em> paper, the authors don’t even define what exactly the AI-ECG screening strategy would be. Would everyone with a “high risk” AI-ECG score get intensive, continuous heart rhythm monitoring while everyone else receives usual care?</li>
+</ul></li>
+</ul>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>Noseworthy, PA, Attia, ZI, Behnken, EM, et al. (2022), “Artificial intelligence-guided screening for atrial fibrillation using electrocardiogram during sinus rhythm: a prospective non-randomised interventional trial,” <em>The Lancet</em> 400, 1206–1212, <a href="https://doi.org/10.1016/S0140-6736(22)01637-3" class="uri">https://doi.org/10.1016/S0140-6736(22)01637-3</a><a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>Yao, X, Attia, ZI, Behnken, EM, et al. (2021), <em>American Heart Journal</em> 239, 73–79, <a href="https://doi.org/10.1016/j.ahj.2021.05.006" class="uri">https://doi.org/10.1016/j.ahj.2021.05.006</a><a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://newsnetwork.mayoclinic.org/discussion/ai-guided-screening-uses-ecg-data-to-detect-a-hidden-risk-factor-for-stroke/" class="uri">https://newsnetwork.mayoclinic.org/discussion/ai-guided-screening-uses-ecg-data-to-detect-a-hidden-risk-factor-for-stroke/</a><a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
